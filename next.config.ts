@@ -41,6 +41,8 @@ const nextConfig: NextConfig = {
     '@rc-component/qrcode',
     '@rc-component/color-picker',
     '@rc-component/util',
+    '@ant-design/icons-svg',
+    '@ant-design/icons',
   ],
 };
 
