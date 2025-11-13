@@ -1,0 +1,325 @@
+// Sistema de prompts para el chatbot - Define el contexto y límites del bot
+
+export const SYSTEM_PROMPT = `Eres un asistente de análisis financiero para un ERP inmobiliario chileno.
+
+REGLAS ESTRICTAS:
+1. SOLO puedes responder sobre datos financieros del ERP
+2. NO puedes dar consejos financieros o legales
+3. NO puedes hablar de temas que no sean datos del sistema
+4. Si te preguntan algo fuera del ERP, responde: "Solo puedo ayudarte con consultas sobre datos del ERP"
+5. SIEMPRE usa formato de números chilenos (separador de miles con puntos)
+6. Las cantidades en CLP deben tener el símbolo $ antes
+7. Las cantidades en UF deben incluir "UF" después
+8. Responde de forma concisa y profesional
+
+DATOS QUE PUEDES CONSULTAR:
+- Centros de costo y sus movimientos
+- Movimientos bancarios
+- Obligaciones (proveedores, contratos)
+- Créditos
+- Subcuentas contables
+- Proyectos inmobiliarios (edificios, condominios, loteos)
+- Unidades inmobiliarias (departamentos, casas, oficinas, estacionamientos)
+- Clientes (personas y empresas)
+- Cotizaciones de ventas
+- Promesas de compra
+- Reportes de ventas
+- Cuentas bancarias
+
+FORMATO DE RESPUESTAS:
+- Usa emojis relevantes (📊 💰 🏢 📈 📉)
+- Presenta números con formato claro
+- Si los datos son muchos, resume lo más importante
+- Ofrece seguir consultando más detalles
+
+IMPORTANTE:
+- Solo trabajas con UNA empresa a la vez (company_id = 1 por defecto)
+- Las fechas deben estar en formato YYYY-MM-DD
+- Todos los montos están en CLP o UF chilenos
+
+MODO AVANZADO (último recurso):
+Si no encuentras una función predefinida adecuada, puedes crear una consulta SQL dinámica de SOLO LECTURA
+usando run_dynamic_sql. Debe cumplir ESTRICTAMENTE:
+- Solo SELECT (sin INSERT/UPDATE/DELETE/ALTER/DROP)
+- Sin JOIN (una sola tabla/vista)
+- Tablas permitidas: obligations_summary, projects, clients
+- Debe filtrar por company_id = 1
+- Límite máximo 100 filas
+- Usa esto SOLO como último recurso, prioriza siempre las funciones predefinidas`;
+
+export const FUNCTION_DEFINITIONS = [
+  {
+    name: "get_cost_centers_summary",
+    description: "Obtiene el resumen de todos los centros de costo con sus totales en CLP y UF",
+    parameters: {
+      type: "object",
+      properties: {
+        company_id: {
+          type: "number",
+          description: "ID de la empresa (siempre 1)"
+        }
+      },
+      required: ["company_id"]
+    }
+  },
+  {
+    name: "get_cost_center_detail",
+    description: "Obtiene el detalle de un centro de costo específico incluyendo subcuentas y movimientos",
+    parameters: {
+      type: "object",
+      properties: {
+        company_id: {
+          type: "number",
+          description: "ID de la empresa"
+        },
+        cost_center_id: {
+          type: "number",
+          description: "ID del centro de costo"
+        }
+      },
+      required: ["company_id", "cost_center_id"]
+    }
+  },
+  {
+    name: "get_bank_movements",
+    description: "Consulta movimientos bancarios con filtros opcionales",
+    parameters: {
+      type: "object",
+      properties: {
+        company_id: {
+          type: "number",
+          description: "ID de la empresa"
+        },
+        unassigned: {
+          type: "boolean",
+          description: "Si es true, solo devuelve movimientos sin centro de costo asignado"
+        },
+        date_from: {
+          type: "string",
+          description: "Fecha inicial en formato YYYY-MM-DD"
+        },
+        date_to: {
+          type: "string",
+          description: "Fecha final en formato YYYY-MM-DD"
+        }
+      },
+      required: ["company_id"]
+    }
+  },
+  {
+    name: "get_obligations",
+    description: "Obtiene lista de obligaciones (contratos, proveedores) con sus montos y estados",
+    parameters: {
+      type: "object",
+      properties: {
+        company_id: {
+          type: "number",
+          description: "ID de la empresa"
+        },
+        status: {
+          type: "string",
+          description: "Estado de la obligación: 'pending', 'paid', 'all'",
+          enum: ["pending", "paid", "all"]
+        }
+      },
+      required: ["company_id"]
+    }
+  },
+  {
+    name: "get_monthly_summary",
+    description: "Genera un resumen mensual de ingresos y gastos por centro de costo",
+    parameters: {
+      type: "object",
+      properties: {
+        company_id: {
+          type: "number",
+          description: "ID de la empresa"
+        },
+        month: {
+          type: "number",
+          description: "Mes (1-12)"
+        },
+        year: {
+          type: "number",
+          description: "Año (ej: 2025)"
+        }
+      },
+      required: ["company_id", "month", "year"]
+    }
+  },
+  {
+    name: "get_projects",
+    description: "Obtiene lista de proyectos inmobiliarios con sus características",
+    parameters: {
+      type: "object",
+      properties: {
+        company_id: {
+          type: "number",
+          description: "ID de la empresa"
+        },
+        status: {
+          type: "string",
+          description: "Estado del proyecto: 'EN_DISENO', 'EN_CONSTRUCCION', 'EN_VENTA', 'ENTREGADO', 'FINALIZADO', 'all'",
+          enum: ["EN_DISENO", "EN_CONSTRUCCION", "EN_VENTA", "ENTREGADO", "FINALIZADO", "all"]
+        }
+      },
+      required: ["company_id"]
+    }
+  },
+  {
+    name: "get_units",
+    description: "Consulta unidades inmobiliarias (departamentos, casas, oficinas, etc.)",
+    parameters: {
+      type: "object",
+      properties: {
+        project_id: {
+          type: "number",
+          description: "ID del proyecto (opcional)"
+        },
+        status: {
+          type: "string",
+          description: "Estado: 'DISPONIBLE', 'RESERVADO', 'VENDIDO', 'BLOQUEADO', 'all'",
+          enum: ["DISPONIBLE", "RESERVADO", "VENDIDO", "BLOQUEADO", "all"]
+        },
+        unit_type: {
+          type: "string",
+          description: "Tipo: 'DEPARTAMENTO', 'CASA', 'OFICINA', 'LOCAL_COMERCIAL', 'ESTACIONAMIENTO', 'BODEGA', 'TERRENO', 'all'",
+          enum: ["DEPARTAMENTO", "CASA", "OFICINA", "LOCAL_COMERCIAL", "ESTACIONAMIENTO", "BODEGA", "TERRENO", "all"]
+        }
+      },
+      required: []
+    }
+  },
+  {
+    name: "get_clients",
+    description: "Obtiene lista de clientes con sus cotizaciones y promesas",
+    parameters: {
+      type: "object",
+      properties: {
+        company_id: {
+          type: "number",
+          description: "ID de la empresa"
+        },
+        client_type: {
+          type: "string",
+          description: "Tipo de cliente: 'PERSONA', 'EMPRESA', 'all'",
+          enum: ["PERSONA", "EMPRESA", "all"]
+        }
+      },
+      required: []
+    }
+  },
+  {
+    name: "get_quotations",
+    description: "Consulta cotizaciones de ventas con sus estados",
+    parameters: {
+      type: "object",
+      properties: {
+        company_id: {
+          type: "number",
+          description: "ID de la empresa"
+        },
+        status: {
+          type: "string",
+          description: "Estado: 'DRAFT', 'SENT', 'ACCEPTED', 'REJECTED', 'EXPIRED', 'all'",
+          enum: ["DRAFT", "SENT", "ACCEPTED", "REJECTED", "EXPIRED", "all"]
+        },
+        client_id: {
+          type: "number",
+          description: "ID del cliente (opcional)"
+        }
+      },
+      required: []
+    }
+  },
+  {
+    name: "get_promises",
+    description: "Obtiene promesas de compra con montos de pie y saldo",
+    parameters: {
+      type: "object",
+      properties: {
+        company_id: {
+          type: "number",
+          description: "ID de la empresa"
+        },
+        status: {
+          type: "string",
+          description: "Estado: 'VIGENTE', 'RESCINDIDA', 'CUMPLIDA', 'all'",
+          enum: ["VIGENTE", "RESCINDIDA", "CUMPLIDA", "all"]
+        },
+        client_id: {
+          type: "number",
+          description: "ID del cliente (opcional)"
+        }
+      },
+      required: []
+    }
+  },
+  {
+    name: "get_sales_report",
+    description: "Genera reporte de ventas por proyecto con totales",
+    parameters: {
+      type: "object",
+      properties: {
+        company_id: {
+          type: "number",
+          description: "ID de la empresa"
+        },
+        project_id: {
+          type: "number",
+          description: "ID del proyecto (opcional)"
+        },
+        date_from: {
+          type: "string",
+          description: "Fecha inicial en formato YYYY-MM-DD"
+        },
+        date_to: {
+          type: "string",
+          description: "Fecha final en formato YYYY-MM-DD"
+        }
+      },
+      required: []
+    }
+  },
+  {
+    name: "run_dynamic_sql",
+    description: "Ejecuta una consulta SQL segura de solo lectura (ÚLTIMO RECURSO - usa funciones predefinidas primero)",
+    parameters: {
+      type: "object",
+      properties: {
+        sql: {
+          type: "string",
+          description: "Consulta SELECT sin JOIN, solo de tablas: obligations_summary, projects, clients. Debe incluir WHERE company_id = 1 y LIMIT <= 100"
+        },
+        company_id: {
+          type: "number",
+          description: "ID de la empresa (1 por defecto)"
+        }
+      },
+      required: ["sql"]
+    }
+  }
+];
+
+export const RESPONSE_TEMPLATES = {
+  noData: "No encontré datos para tu consulta. Intenta ser más específico o pregúntame sobre:\n\n📊 Centros de costo\n💰 Movimientos bancarios\n📋 Obligaciones\n🏢 Proyectos\n🏠 Unidades disponibles\n👥 Clientes\n📝 Cotizaciones\n🤝 Promesas de compra",
+  
+  error: "Hubo un error al consultar los datos. Por favor intenta nuevamente.",
+  
+  outOfScope: "Solo puedo ayudarte con consultas sobre datos del ERP inmobiliario.\n\nPuedo mostrarte:\n• Centros de costo\n• Movimientos bancarios\n• Obligaciones\n• Proyectos inmobiliarios\n• Unidades (departamentos, casas, oficinas)\n• Clientes y cotizaciones\n• Promesas de compra\n• Reportes de ventas"
+};
+
+// Función para validar que una pregunta está dentro del scope
+export function isValidQuery(message: string): boolean {
+  const validKeywords = [
+    'centro', 'costo', 'movimiento', 'banco', 'obligacion', 'credito',
+    'gasto', 'ingreso', 'pago', 'cuenta', 'proyecto', 'resumen',
+    'cuanto', 'total', 'mes', 'año', 'dinero', 'plata', 'peso', 'uf',
+    'unidad', 'departamento', 'casa', 'oficina', 'cliente', 'cotizacion',
+    'promesa', 'venta', 'vendido', 'disponible', 'reservado', 'edificio',
+    'condominio', 'inmobiliaria', 'propiedad', 'compra', 'select', 'consulta'
+  ];
+  
+  const messageLower = message.toLowerCase();
+  return validKeywords.some(keyword => messageLower.includes(keyword));
+}

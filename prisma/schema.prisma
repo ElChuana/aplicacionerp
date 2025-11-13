@@ -1,0 +1,660 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum DteType {
+  FACTURA
+  BOLETA
+  NOTA_CREDITO
+  NOTA_DEBITO
+}
+
+enum DteSyncStatus {
+  PENDING
+  SYNCED
+  ERROR
+}
+
+// CRM Enums
+enum ProjectStatus {
+  EN_DISENO
+  EN_CONSTRUCCION
+  EN_VENTA
+  ENTREGADO
+  FINALIZADO
+}
+
+enum ProjectType {
+  EDIFICIO
+  CONDOMINIO
+  LOTEO
+  OFICINAS
+  COMERCIAL
+  MIXTO
+}
+
+enum UnitType {
+  DEPARTAMENTO
+  CASA
+  OFICINA
+  LOCAL_COMERCIAL
+  ESTACIONAMIENTO
+  BODEGA
+  TERRENO
+}
+
+enum UnitStatus {
+  DISPONIBLE
+  RESERVADO
+  VENDIDO
+  BLOQUEADO
+}
+
+enum ClientType {
+  PERSONA
+  EMPRESA
+}
+
+enum QuotationStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+enum DownPaymentMethod {
+  CONTADO
+  CUOTAS
+  TRANSFERENCIA
+  CHEQUE
+  MIXTO
+}
+
+enum PromiseStatus {
+  VIGENTE
+  RESCINDIDA
+  CUMPLIDA
+}
+
+enum DeedStatus {
+  EN_TRAMITE
+  FIRMADA
+  INSCRITA
+  ANULADA
+}
+
+enum ReceivableStatus {
+  PENDIENTE
+  PARCIAL
+  COBRADO
+  VENCIDO
+}
+
+enum PaymentMethod {
+  EFECTIVO
+  TRANSFERENCIA
+  TARJETA
+  CHEQUE
+  CUOTA
+  CREDITO_HIPOTECARIO
+  OTRO
+}
+
+enum InstallmentStatus {
+  PENDIENTE
+  PAGADA
+  VENCIDA
+  PARCIAL
+}
+
+model dte_documents {
+  id            BigInt        @id @default(autoincrement())
+  folio         Int
+  type          DteType
+  issuer_rut    String       @db.VarChar(20)
+  receiver_rut  String       @db.VarChar(20)
+  issue_date    DateTime     @db.Date
+  total_amount  Decimal      @db.Decimal(18, 2)
+  net_amount    Decimal      @db.Decimal(18, 2)
+  tax_amount    Decimal      @db.Decimal(18, 2)
+  xml_data      Json?        @db.JsonB
+  sync_status   DteSyncStatus @default(PENDING)
+  last_sync     DateTime?    @db.Timestamp(6)
+  created_at    DateTime     @default(now()) @db.Timestamp(6)
+  obligation_id BigInt?
+  obligation    obligations? @relation(fields: [obligation_id], references: [id], onDelete: SetNull)
+
+  @@index([folio, type], map: "idx_dte_folio_type")
+  @@index([issuer_rut], map: "idx_dte_issuer")
+  @@index([receiver_rut], map: "idx_dte_receiver")
+  @@index([obligation_id], map: "idx_dte_obligation")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model bank_accounts {
+  id             Int              @id @default(autoincrement())
+  company_id     Int
+  bank_name      String           @db.VarChar(100)
+  account_no     String           @db.VarChar(50)
+  currency       String           @db.VarChar(10)
+  created_at     DateTime         @default(now()) @db.Timestamp(6)
+  companies      companies        @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  bank_movements bank_movements[]
+
+  @@unique([company_id, account_no])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model bank_movements {
+  id                 BigInt             @id @default(autoincrement())
+  bank_account_id    Int
+  project_id         Int?
+  bank_date          DateTime           @db.Date
+  description        String?
+  debit              Decimal?           @db.Decimal(18, 2)
+  credit             Decimal?           @db.Decimal(18, 2)
+  currency           String             @db.VarChar(10)
+  exchange_rate_date DateTime?          @db.Date
+  source             String             @db.VarChar(30)
+  sub_account_id     Int?
+  created_by         BigInt?
+  import_date        DateTime           @default(now()) @db.Timestamp(6)
+  bank_accounts      bank_accounts      @relation(fields: [bank_account_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users              users?             @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  projects           projects?          @relation(fields: [project_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  sub_accounts       sub_accounts?      @relation(fields: [sub_account_id], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  movement_matches   movement_matches[]
+  
+  // CRM relations (convalidación de pagos)
+  payments                    payments[]
+  payment_plan_installments   payment_plan_installments[]
+
+  @@index([bank_account_id], map: "idx_movements_account")
+  @@index([project_id], map: "idx_movements_project")
+}
+
+model companies {
+  id            Int             @id @default(autoincrement())
+  name          String          @unique @db.VarChar(150)
+  rut           String?         @db.VarChar(20)
+  address       String?
+  created_at    DateTime        @default(now()) @db.Timestamp(6)
+  bank_accounts bank_accounts[]
+  projects      projects[]
+  
+  // CRM relations
+  clients       clients[]
+  quotations    quotations[]
+  promises      promises[]
+  deeds         deeds[]
+  receivables   receivables[]
+  payments      payments[]
+}
+
+model cost_centers {
+  id                 Int            @id @default(autoincrement())
+  code               String         @unique @db.VarChar(100)
+  name               String         @db.VarChar(100)
+  parent_id          Int?
+  cost_centers       cost_centers?  @relation("cost_centersTocost_centers", fields: [parent_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  other_cost_centers cost_centers[] @relation("cost_centersTocost_centers")
+  sub_accounts       sub_accounts[]
+}
+
+model credits {
+  id                  BigInt        @id @default(autoincrement())
+  interest_rate_pct   Decimal       @db.Decimal(5, 2)
+  start_date          DateTime      @db.Date
+  end_date            DateTime?     @db.Date
+  amortization_scheme String?       @db.VarChar(30)
+  last_calculated     DateTime?     @db.Date
+  interest_frequency  String        @default("mensual") @db.VarChar(20)
+  capital_schedule    Json          @default("[]") @db.Json
+  interest_type       String        @default("simple") @db.VarChar(20)
+  obligations         obligations[]
+}
+
+model movement_matches {
+  movement_id    BigInt
+  obligation_id  BigInt
+  matched_amount Decimal        @db.Decimal(18, 2)
+  bank_movements bank_movements @relation(fields: [movement_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  obligations    obligations    @relation(fields: [obligation_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([movement_id, obligation_id])
+  @@index([movement_id], map: "idx_matches_movement")
+  @@index([obligation_id], map: "idx_matches_obligation")
+}
+
+model obligation_documents {
+  id            Int         @id @default(autoincrement())
+  obligation_id BigInt
+  file_name     String      @db.VarChar(255)
+  file_path     String
+  uploaded_by   BigInt?
+  uploaded_at   DateTime    @default(now()) @db.Timestamp(6)
+  obligations   obligations @relation(fields: [obligation_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users         users?      @relation(fields: [uploaded_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([obligation_id], map: "idx_documents_obligation")
+}
+
+model obligation_types {
+  id           Int           @id @default(autoincrement())
+  name         String        @unique @db.VarChar(50)
+  description  String?
+  requires_dte Boolean       @default(false)
+  obligations  obligations[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model obligations {
+  id                   BigInt                 @id @default(autoincrement())
+  project_id           Int
+  provider_id          Int
+  type_id              Int
+  description          String?
+  amount_original      Decimal                @db.Decimal(18, 2)
+  currency             String                 @db.VarChar(10)
+  exchange_rate_date   DateTime?              @db.Date
+  start_date           DateTime               @default(dbgenerated("CURRENT_DATE")) @db.Date
+  due_date             DateTime?              @db.Date
+  status               String                 @default("pendiente") @db.VarChar(20)
+  created_at           DateTime               @default(now()) @db.Timestamp(6)
+  credit_id            BigInt?
+  movement_matches     movement_matches[]
+  obligation_documents obligation_documents[]
+  dte_documents       dte_documents[]
+  credits              credits?               @relation(fields: [credit_id], references: [id], map: "fk_obligations_credit")
+  projects             projects               @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  providers            providers              @relation(fields: [provider_id], references: [id], onUpdate: NoAction)
+  obligation_types     obligation_types       @relation(fields: [type_id], references: [id], onUpdate: NoAction)
+
+  @@index([project_id], map: "idx_obligations_project")
+  @@index([due_date], map: "idx_obligations_due_date")
+  @@index([provider_id], map: "idx_obligations_provider")
+  @@index([type_id], map: "idx_obligations_type")
+  @@index([credit_id], map: "idx_obligations_credit")
+  @@index([credit_id], map: "idx_obligations_credit_id")
+}
+
+model projects {
+  id                  Int              @id @default(autoincrement())
+  company_id          Int
+  code                String           @db.VarChar(30)
+  name                String           @db.VarChar(100)
+  
+  // Características inmobiliarias
+  project_type        ProjectType?
+  status              ProjectStatus    @default(EN_DISENO)
+  address             String?          @db.Text
+  comuna              String?          @db.VarChar(100)
+  region              String?          @db.VarChar(100)
+  total_units         Int?
+  floors              Int?
+  estimated_delivery  DateTime?        @db.Date
+  actual_delivery     DateTime?        @db.Date
+  
+  // Amenities
+  has_pool            Boolean          @default(false)
+  has_gym             Boolean          @default(false)
+  has_coworking       Boolean          @default(false)
+  has_terrace         Boolean          @default(false)
+  has_storage_room    Boolean          @default(false)
+  has_parking         Boolean          @default(false)
+  
+  description         String?          @db.Text
+  created_at          DateTime         @default(now()) @db.Timestamp(6)
+  updated_at          DateTime?        @updatedAt @db.Timestamp(6)
+  
+  bank_movements      bank_movements[]
+  obligations         obligations[]
+  companies           companies        @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  
+  // CRM relations
+  units               units[]
+  quotations          quotations[]
+  promises            promises[]
+  receivables         receivables[]
+
+  @@unique([company_id, code])
+  @@index([company_id])
+  @@index([status])
+}
+
+model sub_accounts {
+  id             Int              @id @default(autoincrement())
+  cost_center_id Int
+  code           String           @db.VarChar(100)
+  name           String           @db.VarChar(100)
+  bank_movements bank_movements[]
+  cost_centers   cost_centers     @relation(fields: [cost_center_id], references: [id], onUpdate: NoAction)
+
+  @@unique([cost_center_id, code], map: "sub_accounts_cost_center_code_unique")
+}
+
+model uf_rates {
+  date     DateTime @id @db.Date
+  uf_value Decimal  @db.Decimal(12, 4)
+}
+
+model users {
+  id                   BigInt                 @id @default(autoincrement())
+  name                 String                 @db.VarChar(100)
+  email                String                 @unique @db.VarChar(150)
+  password_hash        String                 @db.VarChar(255)
+  role                 String                 @db.VarChar(30)
+  created_at           DateTime               @default(now()) @db.Timestamp(6)
+  bank_movements       bank_movements[]
+  obligation_documents obligation_documents[]
+  
+  // CRM relations
+  unit_prices          unit_prices[]
+  quotations           quotations[]
+}
+
+model providers {
+  id            Int           @id @default(autoincrement())
+  name          String        @db.VarChar(150)
+  rut           String?       @db.VarChar(20)
+  address       String?
+  contact_name  String?       @db.VarChar(150)
+  contact_email String?       @db.VarChar(150)
+  contact_phone String?       @db.VarChar(20)
+  created_at    DateTime      @default(now()) @db.Timestamp(6)
+  obligations   obligations[]
+}
+
+// ========================================
+// CRM / MÓDULO COMERCIAL INMOBILIARIO
+// ========================================
+
+model units {
+  id              Int         @id @default(autoincrement())
+  project_id      Int
+  code            String      @db.VarChar(80)
+  name            String      @db.VarChar(150)
+  unit_type       UnitType
+  status          UnitStatus  @default(DISPONIBLE)
+  
+  // Atributos físicos
+  bedrooms        Int?
+  bathrooms       Int?
+  covered_m2      Decimal?    @db.Decimal(10,2)
+  terrace_m2      Decimal?    @db.Decimal(10,2)
+  total_m2        Decimal?    @db.Decimal(10,2)
+  floor           Int?
+  number          String?     @db.VarChar(20)
+  orientation     String?     @db.VarChar(10)
+  
+  // Características
+  has_balcony     Boolean?
+  has_terrace     Boolean?
+  view_type       String?     @db.VarChar(50)
+  
+  description     String?     @db.Text
+  created_at      DateTime    @default(now()) @db.Timestamp(6)
+  updated_at      DateTime?   @updatedAt @db.Timestamp(6)
+  
+  projects        projects    @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  unit_prices     unit_prices[]
+  quotation_items quotation_items[]
+  
+  @@unique([project_id, code])
+  @@index([project_id])
+  @@index([status])
+  @@index([unit_type])
+}
+
+model unit_prices {
+  id          Int       @id @default(autoincrement())
+  unit_id     Int
+  currency    String    @db.VarChar(10)
+  amount      Decimal   @db.Decimal(18,2)
+  valid_from  DateTime  @db.Date
+  valid_to    DateTime? @db.Date
+  reason      String?   @db.VarChar(100)
+  created_by  BigInt?
+  created_at  DateTime  @default(now()) @db.Timestamp(6)
+  
+  units       units     @relation(fields: [unit_id], references: [id], onDelete: Cascade)
+  users       users?    @relation(fields: [created_by], references: [id])
+  
+  @@index([unit_id])
+  @@index([valid_from, valid_to])
+}
+
+model clients {
+  id              Int         @id @default(autoincrement())
+  company_id      Int?
+  name            String      @db.VarChar(150)
+  rut             String?     @db.VarChar(20)
+  client_type     ClientType  @default(PERSONA)
+  email           String?     @db.VarChar(150)
+  phone           String?     @db.VarChar(30)
+  address         String?     @db.Text
+  billing_address String?     @db.Text
+  created_at      DateTime    @default(now()) @db.Timestamp(6)
+  updated_at      DateTime?   @updatedAt @db.Timestamp(6)
+  comuna          String?     @db.VarChar(100)
+  first_name      String?     @db.VarChar(100)
+  last_name       String?     @db.VarChar(100)
+  region          String?     @db.VarChar(100)
+  
+  companies       companies?  @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  contacts        contacts[]
+  quotations      quotations[]
+  promises        promises[]
+  receivables     receivables[]
+  payments        payments[]
+  
+  @@index([company_id])
+  @@unique([company_id, rut])
+}
+
+model contacts {
+  id          Int       @id @default(autoincrement())
+  client_id   Int
+  name        String    @db.VarChar(150)
+  role        String?   @db.VarChar(50)
+  email       String?   @db.VarChar(150)
+  phone       String?   @db.VarChar(30)
+  notes       String?   @db.Text
+  created_at  DateTime  @default(now()) @db.Timestamp(6)
+  
+  clients     clients   @relation(fields: [client_id], references: [id], onDelete: Cascade)
+  
+  @@index([client_id])
+}
+
+model quotations {
+  id                    BigInt            @id @default(autoincrement())
+  company_id            Int?
+  client_id             Int
+  project_id            Int?
+  number                String?           @db.VarChar(50)
+  status                QuotationStatus   @default(DRAFT)
+  
+  // Precios y descuentos
+  currency              String            @db.VarChar(10) @default("CLP")
+  subtotal              Decimal           @db.Decimal(18,2)
+  discount_amount       Decimal           @db.Decimal(18,2) @default(0)
+  discount_pct          Decimal?          @db.Decimal(5,2)
+  bono_pie_amount       Decimal           @db.Decimal(18,2) @default(0)
+  total                 Decimal           @db.Decimal(18,2)
+  
+  // Estructura de pago
+  down_payment_pct      Decimal           @db.Decimal(5,2)
+  down_payment_amount   Decimal           @db.Decimal(18,2)
+  down_payment_method   DownPaymentMethod?
+  mortgage_pct          Decimal?          @db.Decimal(5,2)
+  mortgage_amount       Decimal?          @db.Decimal(18,2)
+  balance_amount        Decimal?          @db.Decimal(18,2)
+  
+  // Metadata
+  valid_until           DateTime?         @db.Date
+  notes                 String?           @db.Text
+  created_by            BigInt?
+  created_at            DateTime          @default(now()) @db.Timestamp(6)
+  updated_at            DateTime?         @updatedAt @db.Timestamp(6)
+  
+  companies             companies?        @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  clients               clients           @relation(fields: [client_id], references: [id], onDelete: Cascade)
+  projects              projects?         @relation(fields: [project_id], references: [id])
+  users                 users?            @relation(fields: [created_by], references: [id])
+  quotation_items       quotation_items[]
+  promises              promises[]
+  
+  @@index([client_id])
+  @@index([company_id])
+  @@index([status])
+}
+
+model quotation_items {
+  id            BigInt      @id @default(autoincrement())
+  quotation_id  BigInt
+  unit_id       Int?
+  description   String      @db.VarChar(250)
+  quantity      Decimal     @db.Decimal(18,2) @default(1)
+  unit_price    Decimal     @db.Decimal(18,2)
+  line_total    Decimal     @db.Decimal(18,2)
+  
+  quotations    quotations  @relation(fields: [quotation_id], references: [id], onDelete: Cascade)
+  units         units?      @relation(fields: [unit_id], references: [id])
+  
+  @@index([quotation_id])
+}
+
+model promises {
+  id                  BigInt         @id @default(autoincrement())
+  quotation_id        BigInt?
+  company_id          Int?
+  client_id           Int
+  project_id          Int?
+  promise_number      String?        @db.VarChar(50)
+  promise_date        DateTime       @db.Date
+  downpayment_amount  Decimal        @db.Decimal(18,2)
+  total_amount        Decimal        @db.Decimal(18,2)
+  terms               String?        @db.Text
+  status              PromiseStatus  @default(VIGENTE)
+  created_at          DateTime       @default(now()) @db.Timestamp(6)
+  updated_at          DateTime?      @updatedAt @db.Timestamp(6)
+  
+  quotations          quotations?    @relation(fields: [quotation_id], references: [id])
+  companies           companies?     @relation(fields: [company_id], references: [id])
+  clients             clients        @relation(fields: [client_id], references: [id])
+  projects            projects?      @relation(fields: [project_id], references: [id])
+  deeds               deeds[]
+  payment_plans       payment_plans[]
+  
+  @@index([client_id])
+  @@index([quotation_id])
+}
+
+model deeds {
+  id              BigInt      @id @default(autoincrement())
+  promise_id      BigInt?
+  company_id      Int?
+  notary_name     String?     @db.VarChar(150)
+  notary_city     String?     @db.VarChar(100)
+  protocol_number String?     @db.VarChar(50)
+  deed_date       DateTime    @db.Date
+  final_amount    Decimal     @db.Decimal(18,2)
+  status          DeedStatus  @default(EN_TRAMITE)
+  notes           String?     @db.Text
+  created_at      DateTime    @default(now()) @db.Timestamp(6)
+  updated_at      DateTime?   @updatedAt @db.Timestamp(6)
+  
+  promises        promises?   @relation(fields: [promise_id], references: [id])
+  companies       companies?  @relation(fields: [company_id], references: [id])
+  
+  @@index([promise_id])
+}
+
+model receivables {
+  id              BigInt            @id @default(autoincrement())
+  company_id      Int?
+  client_id       Int
+  project_id      Int?
+  source_type     String            @db.VarChar(30)
+  source_id       BigInt?
+  description     String            @db.VarChar(250)
+  currency        String            @db.VarChar(10)
+  amount_original Decimal           @db.Decimal(18,2)
+  amount_due      Decimal           @db.Decimal(18,2)
+  due_date        DateTime?         @db.Date
+  status          ReceivableStatus  @default(PENDIENTE)
+  created_at      DateTime          @default(now()) @db.Timestamp(6)
+  updated_at      DateTime?         @updatedAt @db.Timestamp(6)
+  
+  companies       companies?        @relation(fields: [company_id], references: [id])
+  clients         clients           @relation(fields: [client_id], references: [id])
+  projects        projects?         @relation(fields: [project_id], references: [id])
+  payments        payments[]
+  
+  @@index([client_id])
+  @@index([company_id])
+  @@index([status])
+}
+
+model payments {
+  id                BigInt         @id @default(autoincrement())
+  receivable_id     BigInt?
+  company_id        Int?
+  client_id         Int
+  method            PaymentMethod
+  amount            Decimal        @db.Decimal(18,2)
+  paid_date         DateTime       @db.Date
+  reference         String?        @db.VarChar(100)
+  bank_movement_id  BigInt?
+  notes             String?        @db.Text
+  created_at        DateTime       @default(now()) @db.Timestamp(6)
+  
+  receivables       receivables?   @relation(fields: [receivable_id], references: [id])
+  companies         companies?     @relation(fields: [company_id], references: [id])
+  clients           clients        @relation(fields: [client_id], references: [id])
+  bank_movements    bank_movements? @relation(fields: [bank_movement_id], references: [id])
+  
+  @@index([receivable_id])
+  @@index([client_id])
+  @@index([bank_movement_id])
+}
+
+model payment_plans {
+  id                BigInt    @id @default(autoincrement())
+  promise_id        BigInt
+  total_amount      Decimal   @db.Decimal(18,2)
+  installments_count Int
+  interest_rate     Decimal?  @db.Decimal(5,2)
+  created_at        DateTime  @default(now()) @db.Timestamp(6)
+  
+  promises          promises  @relation(fields: [promise_id], references: [id], onDelete: Cascade)
+  installments      payment_plan_installments[]
+  
+  @@index([promise_id])
+}
+
+model payment_plan_installments {
+  id                BigInt             @id @default(autoincrement())
+  payment_plan_id   BigInt
+  installment_number Int
+  due_date          DateTime           @db.Date
+  capital_amount    Decimal            @db.Decimal(18,2)
+  interest_amount   Decimal            @db.Decimal(18,2)
+  installment_amount Decimal           @db.Decimal(18,2)
+  status            InstallmentStatus  @default(PENDIENTE)
+  paid_date         DateTime?          @db.Date
+  bank_movement_id  BigInt?
+  
+  payment_plans     payment_plans      @relation(fields: [payment_plan_id], references: [id], onDelete: Cascade)
+  bank_movements    bank_movements?    @relation(fields: [bank_movement_id], references: [id])
+  
+  @@index([payment_plan_id])
+  @@index([bank_movement_id])
+}

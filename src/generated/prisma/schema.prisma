@@ -1,0 +1,170 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model bank_accounts {
+  id             Int              @id @default(autoincrement())
+  company_id     Int
+  bank_name      String           @db.VarChar(100)
+  account_no     String           @db.VarChar(50)
+  currency       String           @db.VarChar(10)
+  created_at     DateTime         @default(now()) @db.Timestamp(6)
+  companies      companies        @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  bank_movements bank_movements[]
+
+  @@unique([company_id, account_no])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model bank_movements {
+  id                 BigInt             @id @default(autoincrement())
+  bank_account_id    Int
+  project_id         Int?
+  bank_date          DateTime           @db.Date
+  description        String?
+  debit              Decimal?           @db.Decimal(18, 2)
+  credit             Decimal?           @db.Decimal(18, 2)
+  currency           String             @db.VarChar(10)
+  exchange_rate_date DateTime?          @db.Date
+  source             String             @db.VarChar(30)
+  sub_account_id     Int
+  created_by         BigInt?
+  import_date        DateTime           @default(now()) @db.Timestamp(6)
+  bank_accounts      bank_accounts      @relation(fields: [bank_account_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users              users?             @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  projects           projects?          @relation(fields: [project_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  sub_accounts       sub_accounts       @relation(fields: [sub_account_id], references: [id], onUpdate: NoAction)
+  movement_matches   movement_matches[]
+
+  @@index([bank_account_id], map: "idx_movements_account")
+  @@index([project_id], map: "idx_movements_project")
+}
+
+model companies {
+  id            Int             @id @default(autoincrement())
+  name          String          @unique @db.VarChar(150)
+  rut           String?         @db.VarChar(20)
+  address       String?
+  created_at    DateTime        @default(now()) @db.Timestamp(6)
+  bank_accounts bank_accounts[]
+  projects      projects[]
+}
+
+model cost_centers {
+  id                 Int            @id @default(autoincrement())
+  code               String         @unique @db.VarChar(20)
+  name               String         @db.VarChar(100)
+  parent_id          Int?
+  cost_centers       cost_centers?  @relation("cost_centersTocost_centers", fields: [parent_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  other_cost_centers cost_centers[] @relation("cost_centersTocost_centers")
+  sub_accounts       sub_accounts[]
+}
+
+model credits {
+  id                  BigInt      @id @default(autoincrement())
+  obligation_id       BigInt      @unique
+  interest_rate_pct   Decimal     @db.Decimal(5, 2)
+  start_date          DateTime    @db.Date
+  end_date            DateTime?   @db.Date
+  amortization_scheme String?     @db.VarChar(30)
+  last_calculated     DateTime?   @db.Date
+  obligations         obligations @relation(fields: [obligation_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model movement_matches {
+  movement_id    BigInt
+  obligation_id  BigInt
+  matched_amount Decimal        @db.Decimal(18, 2)
+  bank_movements bank_movements @relation(fields: [movement_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  obligations    obligations    @relation(fields: [obligation_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([movement_id, obligation_id])
+  @@index([movement_id], map: "idx_matches_movement")
+  @@index([obligation_id], map: "idx_matches_obligation")
+}
+
+model obligation_documents {
+  id            Int         @id @default(autoincrement())
+  obligation_id BigInt
+  file_name     String      @db.VarChar(255)
+  file_path     String
+  uploaded_by   BigInt?
+  uploaded_at   DateTime    @default(now()) @db.Timestamp(6)
+  obligations   obligations @relation(fields: [obligation_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users         users?      @relation(fields: [uploaded_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([obligation_id], map: "idx_documents_obligation")
+}
+
+model obligation_types {
+  id          Int           @id @default(autoincrement())
+  name        String        @unique @db.VarChar(50)
+  description String?
+  obligations obligations[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model obligations {
+  id                   BigInt                 @id @default(autoincrement())
+  project_id           Int
+  type_id              Int
+  description          String?
+  amount_original      Decimal                @db.Decimal(18, 2)
+  currency             String                 @db.VarChar(10)
+  exchange_rate_date   DateTime?              @db.Date
+  due_date             DateTime               @db.Date
+  status               String                 @default("pendiente") @db.VarChar(20)
+  created_at           DateTime               @default(now()) @db.Timestamp(6)
+  credits              credits?
+  movement_matches     movement_matches[]
+  obligation_documents obligation_documents[]
+  projects             projects               @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  obligation_types     obligation_types       @relation(fields: [type_id], references: [id], onUpdate: NoAction)
+
+  @@index([project_id], map: "idx_obligations_project")
+}
+
+model projects {
+  id             Int              @id @default(autoincrement())
+  company_id     Int
+  code           String           @db.VarChar(30)
+  name           String           @db.VarChar(100)
+  created_at     DateTime         @default(now()) @db.Timestamp(6)
+  bank_movements bank_movements[]
+  obligations    obligations[]
+  companies      companies        @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([company_id, code])
+}
+
+model sub_accounts {
+  id             Int              @id @default(autoincrement())
+  cost_center_id Int
+  code           String           @unique @db.VarChar(20)
+  name           String           @db.VarChar(100)
+  bank_movements bank_movements[]
+  cost_centers   cost_centers     @relation(fields: [cost_center_id], references: [id], onUpdate: NoAction)
+}
+
+model uf_rates {
+  date     DateTime @id @db.Date
+  uf_value Decimal  @db.Decimal(12, 4)
+}
+
+model users {
+  id                   BigInt                 @id @default(autoincrement())
+  name                 String                 @db.VarChar(100)
+  email                String                 @unique @db.VarChar(150)
+  password_hash        String                 @db.VarChar(255)
+  role                 String                 @db.VarChar(30)
+  created_at           DateTime               @default(now()) @db.Timestamp(6)
+  bank_movements       bank_movements[]
+  obligation_documents obligation_documents[]
+}
