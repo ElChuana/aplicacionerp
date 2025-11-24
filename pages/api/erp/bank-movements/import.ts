@@ -1,6 +1,10 @@
 // File: pages/api/erp/bank-movements/import.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { PrismaClient } from '@prisma/client';
+// Nota de dominio: en este proyecto usamos la siguiente convención:
+// - debit = Abono (entra dinero)
+// - credit = Cargo (sale dinero)
+// Por eso, al importar CSV con columnas Cargo/Abono, mapeamos Abono -> debit y Cargo -> credit.
+import prisma from '../../../../lib/prisma';
 import { IncomingForm } from 'formidable';
 import fs from 'fs';
 import Papa from 'papaparse';
@@ -9,7 +13,7 @@ export const config = {
   api: { bodyParser: false },
 };
 
-const prisma = new PrismaClient();
+// Usamos el prisma singleton de lib/prisma
 
 /**
  * 🔹 Solo acepta fechas en formato DD-MM-AA (ejemplo: 01-08-25)
@@ -78,8 +82,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .map((r) => ({
         bank_date: parseFechaDDMMAA(r.Fecha),
         description: (r.Descripcion || r.Descripción || '').trim(),
-        debit: parseMonto(r.Cargo),
-        credit: parseMonto(r.Abono),
+        // Importante: en cartolas, "Abono" corresponde a entradas (debit) y "Cargo" a salidas (credit)
+        debit: parseMonto(r.Abono),
+        credit: parseMonto(r.Cargo),
         currency: 'CLP',
         source: 'cartola',
         bank_account_id: bankAccountId,

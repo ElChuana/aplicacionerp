@@ -3,6 +3,12 @@ import { Table, Tag } from 'antd';
 import { useRouter } from 'next/router';
 import type { ColumnsType } from 'antd/es/table';
 
+// Formateo consistente de números con separador de miles
+function formatNumber(value: number): string {
+  if (isNaN(value) || value == null) return "0";
+  return Math.round(value).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
 export interface ObligationRow {
   id: string;
   providerName: string;
@@ -14,6 +20,11 @@ export interface ObligationRow {
   startDate: string;
   dueDate: string;
   balance: string;
+  creditNotesTotal?: number;
+  costCenterId?: number | null;
+  costCenterName?: string | null;
+  subAccountId?: number | null;
+  subAccountName?: string | null;
   status: 'pendiente' | 'vencida' | 'pagada';
 }
 
@@ -30,7 +41,7 @@ export const ObligationsTable: React.FC<Props> = ({ data, loading }) => {
       title: 'Proveedor', 
       dataIndex: 'providerName', 
       key: 'providerName',
-      width: 200,
+      width: 280, // más espacio para nombres largos
       ellipsis: true,
       fixed: 'left'
     },
@@ -56,7 +67,7 @@ export const ObligationsTable: React.FC<Props> = ({ data, loading }) => {
       align: 'right',
       render: (val: string) => {
         const num = Number(val);
-        return isNaN(num) ? val : num.toLocaleString('es-CL');
+        return isNaN(num) ? val : `$${formatNumber(num)}`;
       }
     },
     { 
@@ -66,6 +77,17 @@ export const ObligationsTable: React.FC<Props> = ({ data, loading }) => {
       width: 80,
       align: 'center' 
     },
+    {
+      title: 'Notas Crédito',
+      dataIndex: 'creditNotesTotal',
+      key: 'creditNotesTotal',
+      width: 140,
+      align: 'right',
+      render: (val: number) => {
+        const num = Number(val || 0);
+        return isNaN(num) || num === 0 ? '-' : `$${formatNumber(num)}`;
+      }
+    },
     { 
       title: 'Balance', 
       dataIndex: 'balance', 
@@ -74,14 +96,30 @@ export const ObligationsTable: React.FC<Props> = ({ data, loading }) => {
       align: 'right',
       render: (val: string) => {
         const num = Number(val);
-        return isNaN(num) ? val : num.toLocaleString('es-CL');
+        return isNaN(num) ? val : `$${formatNumber(num)}`;
       }
+    },
+    { 
+      title: 'Centro de Costo', 
+      dataIndex: 'costCenterName', 
+      key: 'costCenterName',
+      width: 180,
+      ellipsis: true,
+      render: (val: string | null) => val || '-'
+    },
+    { 
+      title: 'Subcuenta', 
+      dataIndex: 'subAccountName', 
+      key: 'subAccountName',
+      width: 180,
+      ellipsis: true,
+      render: (val: string | null) => val || '-'
     },
     { 
       title: 'Descripción', 
       dataIndex: 'description', 
       key: 'description',
-      width: 250,
+      width: 400, // ampliar porcentaje visible de la descripción
       ellipsis: true 
     },
     { 
@@ -116,21 +154,22 @@ export const ObligationsTable: React.FC<Props> = ({ data, loading }) => {
       dataSource={data}
       rowKey="id"
       loading={loading}
-      pagination={{ pageSize: 10 }}
+      pagination={{ pageSize: 15 }}
+      scroll={{ x: 'max-content', y: 'calc(100vh - 260px)' }}
+      style={{ width: '100%' }}
       onRow={record => ({
         onClick: () => {
-          // Validar que el id existe antes de navegar
           if (!record.id) {
             console.error('ID de obligación no encontrado:', record);
             return;
           }
-          // Construye ruta usando objeto para interpolar [id]
-          const rawCompany = router.query.company;
-          const company = Array.isArray(rawCompany) ? rawCompany[0] : rawCompany;
-          router.push({
-            pathname: '/erp/obligations/[id]',
-            query: { id: record.id, ...(company && { company }) },
-          });
+          // Ruta ERP correcta con query company si existe
+            const rawCompany = router.query.company;
+            const company = Array.isArray(rawCompany) ? rawCompany[0] : rawCompany;
+            router.push({
+              pathname: '/erp/obligations/[id]',
+              query: { id: record.id, ...(company && { company }) },
+            });
         },
         style: {
           cursor: 'pointer',

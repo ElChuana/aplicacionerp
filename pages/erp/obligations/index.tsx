@@ -12,6 +12,7 @@ import {
   Select,
   DatePicker,
   Space,
+  Input,
 } from 'antd';
 import type { Moment } from 'moment';
 import { ObligationsTable, ObligationRow } from '../../../components/ObligationsTable';
@@ -25,6 +26,12 @@ const fetcher = (url: string) =>
     if (!res.ok) throw new Error(`Error ${res.status}: ${res.statusText}`);
     return res.json();
   });
+
+// Formateo consistente de números con separador de miles
+function formatNumber(value: number): string {
+  if (isNaN(value) || value == null) return "0";
+  return Math.round(value).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
 
 const ObligationsPage: React.FC = () => {
   const router = useRouter();
@@ -43,9 +50,28 @@ const ObligationsPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>();
   const [providerFilter, setProviderFilter] = useState<string>();
   const [dateRange, setDateRange] = useState<[Moment, Moment] | null>(null);
+  const [descFilter, setDescFilter] = useState<string>('');
+  const [debouncedDesc, setDebouncedDesc] = useState<string>('');
+
+  // Debounce para buscador
+  React.useEffect(() => {
+    const t = setTimeout(() => setDebouncedDesc(descFilter.trim().toLowerCase()), 400);
+    return () => clearTimeout(t);
+  }, [descFilter]);
 
   // Use data array or empty while loading (memoized para evitar cambios en deps)
   const baseData = useMemo(() => data ?? [], [data]);
+
+  // State para filtros de clasificación
+  const [costCenterFilter, setCostCenterFilter] = useState<number>();
+  const [subAccountFilter, setSubAccountFilter] = useState<number>();
+
+  // Cargar centros de costo y subcuentas
+  const { data: costCenters } = useSWR('/api/erp/cost-centers/simple', fetcher);
+  const { data: subAccounts } = useSWR(
+    costCenterFilter ? `/api/erp/sub-accounts?cost_center_id=${costCenterFilter}` : null,
+    fetcher
+  );
 
   // Memoize filtered data
   const filteredData = useMemo(() => {
@@ -55,6 +81,22 @@ const ObligationsPage: React.FC = () => {
     }
     if (providerFilter) {
       items = items.filter(o => o.providerName === providerFilter);
+    }
+    if (costCenterFilter) {
+      items = items.filter(o => o.costCenterId === costCenterFilter);
+    }
+    if (subAccountFilter) {
+      items = items.filter(o => o.subAccountId === subAccountFilter);
+    }
+    if (debouncedDesc) {
+      const q = debouncedDesc;
+      items = items.filter(o =>
+        (o.description || '').toLowerCase().includes(q) ||
+        (o.providerName || '').toLowerCase().includes(q) ||
+        (o.typeName || '').toLowerCase().includes(q) ||
+        (o.costCenterName || '').toLowerCase().includes(q) ||
+        (o.subAccountName || '').toLowerCase().includes(q)
+      );
     }
     if (dateRange) {
       const [start, end] = dateRange;
@@ -66,7 +108,16 @@ const ObligationsPage: React.FC = () => {
       });
     }
     return items;
-  }, [baseData, statusFilter, providerFilter, dateRange]);
+  }, [baseData, statusFilter, providerFilter, costCenterFilter, subAccountFilter, debouncedDesc, dateRange]);
+
+  // Debug estable: log inicial una sola vez cuando llegan datos
+  const loggedRef = React.useRef(false);
+  React.useEffect(() => {
+    if (!loggedRef.current && baseData.length > 0) {
+      console.log('[DEBUG obligations primera muestra]', baseData.slice(0, 5));
+      loggedRef.current = true;
+    }
+  }, [baseData]);
 
   // Evitar hydration mismatch: no usar early-returns que dependan de router/query en SSR
   const isRouterReady = router.isReady;
@@ -103,7 +154,7 @@ const ObligationsPage: React.FC = () => {
                     ? 'success'
                     : 'warning'
                 }
-                text={`${item.providerName}: ${item.amount} ${item.currency}`}
+                text={`${item.providerName}: $${formatNumber(Number(item.amount))} ${item.currency}`}
                 style={{ cursor: hasValidId ? 'pointer' : 'default' }}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -141,6 +192,13 @@ const ObligationsPage: React.FC = () => {
       <Tabs defaultActiveKey="list">
         <TabPane tab="Lista" key="list">
           <Space wrap style={{ marginBottom: 16 }}>
+            <Input.Search
+              placeholder="Buscar por descripción, proveedor o tipo..."
+              allowClear
+              value={descFilter}
+              onChange={(e) => setDescFilter(e.target.value)}
+              style={{ width: 360 }}
+            />
             <Select
               placeholder="Estado"
               style={{ width: 150 }}
@@ -158,6 +216,24 @@ const ObligationsPage: React.FC = () => {
               allowClear
               options={providerOptions}
               onChange={setProviderFilter}
+            />
+            <Select
+              placeholder="Centro de Costo"
+              style={{ width: 200 }}
+              allowClear
+              options={costCenters?.map((c: any) => ({ label: c.name, value: c.id })) || []}
+              onChange={(val) => {
+                setCostCenterFilter(val);
+                setSubAccountFilter(undefined);
+              }}
+            />
+            <Select
+              placeholder="Subcuenta"
+              style={{ width: 200 }}
+              allowClear
+              disabled={!costCenterFilter}
+              options={subAccounts?.map((s: any) => ({ label: `${s.code} - ${s.name}`, value: s.id })) || []}
+              onChange={setSubAccountFilter}
             />
             <RangePicker onChange={dates => setDateRange(dates as [Moment, Moment] | null)} />
           </Space>

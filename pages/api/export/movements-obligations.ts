@@ -185,7 +185,7 @@ export default async function handler(
             debit: Number(movement.debit) || 0,
             credit: Number(movement.credit) || 0,
             assigned_amount: Number(assoc.matched_amount) || 0,
-            obl_number: obligation.id || '-',
+            obl_number: obligation.id ? String(obligation.id) : '-',
             obl_type: obligation.obligation_types?.name || '-',
             provider: obligation.providers?.name || '-',
             provider_rut: obligation.providers?.rut || '-',
@@ -257,7 +257,7 @@ export default async function handler(
         .join(' | ');
 
       obligationsSheet.addRow({
-        number: obligation.id || '-',
+        number: obligation.id ? String(obligation.id) : '-',
         issue_date: obligation.due_date,
         due_date: obligation.due_date,
         type: obligation.obligation_types?.name || '-',

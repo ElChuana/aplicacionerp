@@ -47,12 +47,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           type_name,
           description,
           amount_original::float,
+          credit_notes_total::float,
           currency,
           to_char(start_date, 'YYYY-MM-DD') AS start_date,
           to_char(due_date, 'YYYY-MM-DD') AS due_date,
           paid_amount::float,
           balance::float,
           status,
+          cost_center_id,
+          cost_center_name,
+          sub_account_id,
+          sub_account_code,
+          sub_account_name,
           created_at
         FROM obligations_summary
         WHERE company_id = ${companyId}
@@ -66,12 +72,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         typeName: o.type_name,
         description: o.description,
         amount: o.amount_original, // deja número (el front lo formatea)
+        creditNotesTotal: o.credit_notes_total || 0,
         currency: o.currency,
         startDate: o.start_date,
         dueDate: o.due_date,
         balance: o.balance,        // deja número
         status: o.status,
+        costCenterId: o.cost_center_id || null,
+        costCenterName: o.cost_center_name || null,
+        subAccountId: o.sub_account_id || null,
+        subAccountCode: o.sub_account_code || null,
+        subAccountName: o.sub_account_name || null,
       }));
+      // Deshabilitar caché para asegurar datos frescos
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
       return res.status(200).json(result);
     } catch (error) {
       console.error('GET /api/obligations error:', error);
@@ -86,6 +102,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const project_id = Number(req.body.project_id ?? req.body.projectId);
       const type_id = Number(req.body.type_id ?? req.body.typeId);
       const provider_id = Number(req.body.provider_id ?? req.body.providerId);
+      const cost_center_id = Number(req.body.cost_center_id ?? req.body.costCenterId);
+      const sub_account_id = Number(req.body.sub_account_id ?? req.body.subAccountId);
 
       const rawAmount = req.body.amount_original ?? req.body.amount;
       const amount_original =
@@ -95,10 +113,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         isNaN(project_id) || project_id <= 0 ||
         isNaN(type_id)    || type_id    <= 0 ||
         isNaN(provider_id)|| provider_id<= 0 ||
+        isNaN(cost_center_id) || cost_center_id <= 0 ||
+        isNaN(sub_account_id) || sub_account_id <= 0 ||
         isNaN(amount_original) || amount_original <= 0
       ) {
         return res.status(400).json({
-          message: 'project_id, type_id, provider_id y amount_original son obligatorios y numéricos',
+          message: 'project_id, type_id, provider_id, cost_center_id, sub_account_id y amount_original son obligatorios y numéricos',
         });
       }
 
@@ -140,6 +160,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         project_id: number;
         type_id: number;
         provider_id: number;
+        cost_center_id: number;
+        sub_account_id: number;
         description: string | null;
         amount_original: any; // Prisma Decimal compatible
         currency: string;
@@ -156,6 +178,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           project_id,
           type_id,
           provider_id,
+          cost_center_id,
+          sub_account_id,
           description,
           amount_original,
           currency,
@@ -179,6 +203,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             project_id,
             type_id,
             provider_id,
+            cost_center_id,
+            sub_account_id,
             description,
             amount_original,
             currency,

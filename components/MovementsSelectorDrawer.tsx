@@ -1,6 +1,6 @@
 // File: components/MovementsSelectorDrawer.tsx
 import React, { useState, useEffect, useMemo } from 'react';
-import { Drawer, Button, Table, InputNumber, Space, Typography, Tag, Select, DatePicker } from 'antd';
+import { Drawer, Button, Table, InputNumber, Space, Typography, Tag, Select, DatePicker, Input } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { Movement } from './MovementsTable';
 import dayjs from 'dayjs';
@@ -57,6 +57,7 @@ export const MovementsSelectorDrawer: React.FC<Props> = ({
 
   // Filtros UI state
   const [accountFilter, setAccountFilter] = useState<string | undefined>(undefined);
+  const [descFilter, setDescFilter] = useState<string>('');
   
   // Sin filtro de fecha por defecto - mostrar todos los movimientos
   const [dateRange, setDateRange] = useState<{ from: Date | null; to: Date | null }>({ from: null, to: null });
@@ -72,9 +73,11 @@ export const MovementsSelectorDrawer: React.FC<Props> = ({
         if (d < from || d > to) return false;
       }
       if (accountFilter && `${m.bank_account_id}` !== accountFilter) return false;
+      // Filtro de descripción
+      if (descFilter && !m.description?.toLowerCase().includes(descFilter.toLowerCase())) return false;
       return true;
     });
-  }, [data, dateRange, accountFilter]);
+  }, [data, dateRange, accountFilter, descFilter]);
 
 
     // Sistema de recomendaciones basado en scores del servidor
@@ -172,8 +175,12 @@ export const MovementsSelectorDrawer: React.FC<Props> = ({
       title: 'Descripción',
       dataIndex: 'description',
       key: 'description',
-      ellipsis: true,
-      width: 250,
+      onCell: () => ({
+        style: {
+          whiteSpace: 'normal',
+          wordBreak: 'break-word',
+        },
+      }),
       render: (desc: string) => desc || '-',
     },
     {
@@ -343,6 +350,13 @@ export const MovementsSelectorDrawer: React.FC<Props> = ({
             onChange={(v) => setAccountFilter(v)}
             options={accountsOptions.map(a => ({ value: a.value, label: a.label }))}
           />
+          <Input.Search
+            placeholder="Buscar por descripción..."
+            allowClear
+            value={descFilter}
+            onChange={(e) => setDescFilter(e.target.value)}
+            style={{ width: 300 }}
+          />
           <Space>
             <Text>Desde:</Text>
             <DatePicker
@@ -368,7 +382,8 @@ export const MovementsSelectorDrawer: React.FC<Props> = ({
           <Button 
             onClick={() => { 
               setAccountFilter(accountsOptions[0]?.value); 
-              setDateRange({ from: null, to: null }); 
+              setDateRange({ from: null, to: null });
+              setDescFilter(''); 
             }}
           >
             Reiniciar Filtros
@@ -404,7 +419,7 @@ export const MovementsSelectorDrawer: React.FC<Props> = ({
                 selectedRowKeys: selectedKeys,
                 onChange: (keys: React.Key[]) => onSelectionChange(keys),
               }}
-              scroll={{ x: 'max-content' }}
+              tableLayout="fixed"
             />
           </div>
         )}
@@ -438,7 +453,7 @@ export const MovementsSelectorDrawer: React.FC<Props> = ({
                 selectedRowKeys: selectedKeys,
                 onChange: (keys: React.Key[]) => onSelectionChange(keys),
               }}
-              scroll={{ x: 'max-content' }}
+              tableLayout="fixed"
             />
           </div>
         )}
@@ -468,7 +483,7 @@ export const MovementsSelectorDrawer: React.FC<Props> = ({
               showSizeChanger: true,
               showTotal: (total) => `Total: ${total} movimientos`
             }}
-            scroll={{ x: 'max-content' }}
+            tableLayout="fixed"
             rowClassName={(record) => {
               const amount = record.credit ?? record.debit ?? 0;
               if (amount === balance) return 'bg-blue-50';

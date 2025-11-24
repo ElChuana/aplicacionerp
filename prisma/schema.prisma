@@ -1,3 +1,12 @@
+model internal_credit_notes {
+  id             Int      @id @default(autoincrement())
+  obligation_id  BigInt
+  amount         Decimal
+  date           DateTime
+  description    String?
+  created_at     DateTime @default(now())
+  obligations    obligations @relation(fields: [obligation_id], references: [id])
+}
 generator client {
   provider = "prisma-client-js"
 }
@@ -162,13 +171,11 @@ model bank_movements {
   currency           String             @db.VarChar(10)
   exchange_rate_date DateTime?          @db.Date
   source             String             @db.VarChar(30)
-  sub_account_id     Int?
   created_by         BigInt?
   import_date        DateTime           @default(now()) @db.Timestamp(6)
   bank_accounts      bank_accounts      @relation(fields: [bank_account_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   users              users?             @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
   projects           projects?          @relation(fields: [project_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  sub_accounts       sub_accounts?      @relation(fields: [sub_account_id], references: [id], onDelete: Restrict, onUpdate: NoAction)
   movement_matches   movement_matches[]
   
   // CRM relations (convalidación de pagos)
@@ -205,6 +212,7 @@ model cost_centers {
   cost_centers       cost_centers?  @relation("cost_centersTocost_centers", fields: [parent_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   other_cost_centers cost_centers[] @relation("cost_centersTocost_centers")
   sub_accounts       sub_accounts[]
+  obligations        obligations[]
 }
 
 model credits {
@@ -268,13 +276,18 @@ model obligations {
   status               String                 @default("pendiente") @db.VarChar(20)
   created_at           DateTime               @default(now()) @db.Timestamp(6)
   credit_id            BigInt?
+  cost_center_id       Int?
+  sub_account_id       Int?
   movement_matches     movement_matches[]
   obligation_documents obligation_documents[]
   dte_documents       dte_documents[]
+  internal_credit_notes internal_credit_notes[]
   credits              credits?               @relation(fields: [credit_id], references: [id], map: "fk_obligations_credit")
   projects             projects               @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   providers            providers              @relation(fields: [provider_id], references: [id], onUpdate: NoAction)
   obligation_types     obligation_types       @relation(fields: [type_id], references: [id], onUpdate: NoAction)
+  cost_centers         cost_centers?          @relation(fields: [cost_center_id], references: [id], onUpdate: NoAction)
+  sub_accounts         sub_accounts?          @relation(fields: [sub_account_id], references: [id], onUpdate: NoAction)
 
   @@index([project_id], map: "idx_obligations_project")
   @@index([due_date], map: "idx_obligations_due_date")
@@ -282,6 +295,8 @@ model obligations {
   @@index([type_id], map: "idx_obligations_type")
   @@index([credit_id], map: "idx_obligations_credit")
   @@index([credit_id], map: "idx_obligations_credit_id")
+  @@index([cost_center_id], map: "idx_obligations_cost_center")
+  @@index([sub_account_id], map: "idx_obligations_sub_account")
 }
 
 model projects {
@@ -333,7 +348,7 @@ model sub_accounts {
   cost_center_id Int
   code           String           @db.VarChar(100)
   name           String           @db.VarChar(100)
-  bank_movements bank_movements[]
+  obligations     obligations[]
   cost_centers   cost_centers     @relation(fields: [cost_center_id], references: [id], onUpdate: NoAction)
 
   @@unique([cost_center_id, code], map: "sub_accounts_cost_center_code_unique")

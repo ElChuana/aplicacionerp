@@ -3,8 +3,8 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import prisma from '../../../../../lib/prisma';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'POST') {
-    res.setHeader('Allow', ['POST']);
+  if (!['POST','DELETE'].includes(req.method || '')) {
+    res.setHeader('Allow', ['POST','DELETE']);
     return res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 
@@ -20,6 +20,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
+    if (req.method === 'DELETE') {
+      const ids = movementIds.map(m => Number(String(m).split(':')[0])).filter(n => !isNaN(n));
+      if (!ids.length) return res.status(400).json({ message: 'movementIds inválidos' });
+      const del = await prisma.movement_matches.deleteMany({
+        where: {
+          obligation_id: obligationId,
+          movement_id: { in: ids }
+        }
+      });
+      return res.status(200).json({ message: 'Asociaciones eliminadas', count: del.count });
+    }
     const entries = movementIds.map(entry => {
       const [mid, amt] = entry.split(':');
       const movementId = Number(mid);

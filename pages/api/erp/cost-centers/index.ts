@@ -6,8 +6,9 @@ export interface CostCenterAgg {
   id: number;
   code: string;
   name: string;
-  totalCLP: number;
-  totalUF: number;
+  totalCLP: number; // Suma de amount_original en CLP
+  totalUF: number;  // Suma de amount_original en UF
+  obligationsCount: number; // Número de obligaciones clasificadas en este centro
 }
 
 export default async function handler(
@@ -28,67 +29,34 @@ export default async function handler(
       return res.status(400).json({ error: 'Parámetro company inválido' });
     }
 
-    // Obtener todos los centros de costo
-    const allCostCenters = await prisma.cost_centers.findMany({
-      orderBy: { id: 'asc' }
-    });
+    // Consulta agregada basada en obligaciones (modelo moderno)
+    // Asunción: projects.company_id disponible para filtrar por empresa.
+    const aggRows = await prisma.$queryRaw<any[]>`
+      SELECT
+        cc.id,
+        cc.code,
+        cc.name,
+        COALESCE(SUM(CASE WHEN o.currency = 'CLP' THEN o.amount_original ELSE 0 END),0)    AS total_clp,
+        COALESCE(SUM(CASE WHEN o.currency = 'UF'  THEN o.amount_original ELSE 0 END),0)    AS total_uf,
+        COUNT(o.id) FILTER (WHERE o.id IS NOT NULL)                                         AS obligations_count
+      FROM cost_centers cc
+      LEFT JOIN obligations o ON o.cost_center_id = cc.id
+      LEFT JOIN projects p    ON o.project_id = p.id
+      WHERE (p.company_id = ${companyId} OR p.company_id IS NULL)
+      GROUP BY cc.id, cc.code, cc.name
+      ORDER BY cc.name ASC;
+    `;
 
-    // Inicializar mapa con todos los centros en 0
-    const aggMap = new Map<number, CostCenterAgg>();
-    for (const cc of allCostCenters) {
-      aggMap.set(cc.id, {
-        id: cc.id,
-        code: cc.code,
-        name: cc.name,
-        totalCLP: 0,
-        totalUF: 0
-      });
-    }
+    const result: CostCenterAgg[] = aggRows.map(r => ({
+      id: Number(r.id),
+      code: r.code,
+      name: r.name,
+      totalCLP: Number(r.total_clp),
+      totalUF: Number(r.total_uf),
+      obligationsCount: Number(r.obligations_count)
+    }));
 
-    // Obtener movimientos vinculados a la empresa
-    const movements = await prisma.bank_movements.findMany({
-      where: { bank_accounts: { company_id: companyId } },
-      include: {
-        sub_accounts: {
-          include: { cost_centers: true },
-        },
-        bank_accounts: { select: { bank_name: true, account_no: true } },
-      },
-    });
-
-    // Cargar UF rates únicos
-    const dates = Array.from(
-      new Set(movements.map(m => m.bank_date.toISOString().slice(0, 10)))
-    );
-    const dateObjs = dates.map(d => new Date(d));
-    const ufRates = await prisma.uf_rates.findMany({
-      where: { date: { in: dateObjs } },
-    });
-    const ufMap = new Map(
-      ufRates.map(u => [u.date.toISOString().slice(0, 10), parseFloat(u.uf_value.toString())])
-    );
-
-    // Agregar movimientos a los centros correspondientes
-    for (const m of movements) {
-      const sa = m.sub_accounts;
-      if (!sa) continue; // sin subcuenta asignada
-      const cc = sa.cost_centers;
-      if (!cc) continue; // sin centro de costo
-      
-      const agg = aggMap.get(cc.id);
-      if (!agg) continue; // centro no existe (no debería pasar)
-      
-      // Determinar monto neto (abono positivo, cargo negativo)
-      const amountCLP =
-        m.debit != null ? m.debit : m.credit != null ? -m.credit : 0;
-      agg.totalCLP += Number(amountCLP);
-      // Calcular UF
-      const dateKey = m.bank_date.toISOString().slice(0, 10);
-      const ufVal = ufMap.get(dateKey) ?? 1;
-      agg.totalUF += Number(amountCLP) / ufVal;
-    }
-
-    return res.status(200).json(Array.from(aggMap.values()));
+    return res.status(200).json(result);
   } catch (error: any) {
     console.error('Error en /api/cost-centers:', error);
     return res.status(500).json({ error: 'Error interno al obtener centros de costo' });

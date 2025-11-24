@@ -7,6 +7,7 @@ export type CostCenterAgg = {
   name: string;
   totalCLP: number | null | undefined;
   totalUF: number | null | undefined;
+  obligationsCount?: number;
 };
 interface Props {
   data: CostCenterAgg[];
@@ -31,12 +32,17 @@ export const CostCentersSummary: React.FC<Props> = ({ data, onSelect }) => (
         >
           <Typography.Text>
             <strong>CLP</strong>: {cc.totalCLP != null ? Math.round(cc.totalCLP).toLocaleString('es-CL') : '-'}
-            {(cc.totalCLP ?? 0) < 0 && <span style={{ color: '#ff4d4f', marginLeft: 8 }}>(Negativo)</span>}
           </Typography.Text>
           <br />
           <Typography.Text>
             <strong>UF</strong>: {cc.totalUF != null ? cc.totalUF.toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}
           </Typography.Text>
+          <br />
+          {typeof cc.obligationsCount === 'number' && (
+            <Typography.Text type="secondary">
+              {cc.obligationsCount.toLocaleString('es-CL')} obligaciones
+            </Typography.Text>
+          )}
         </Card>
       </Col>
     ))}

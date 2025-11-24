@@ -39,8 +39,21 @@ export async function syncUfRates(initial = false) {
   const failed: string[] = [];
 
   for (const { start, end } of ranges) {
-    const url = `${CMF_BASE_URL}?apikey=${CMF_API_KEY}&formato=json&fecha_inicio=${toISO(start)}&fecha_fin=${toISO(end)}`;
-    console.log(`🔄 Descargando UF: ${toISO(start)} → ${toISO(end)}`);
+    // Detectar si es un rango que cubre el mes completo para usar el endpoint optimizado /uf/{year}/{month}
+    const isFullMonth =
+      start.getDate() === 1 &&
+      start.getMonth() === end.getMonth() &&
+      end.getDate() === new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate();
+    let url: string;
+    if (isFullMonth) {
+      const year = start.getFullYear();
+      const monthStr = String(start.getMonth() + 1).padStart(2, '0');
+      url = `${CMF_BASE_URL}/${year}/${monthStr}?apikey=${CMF_API_KEY}&formato=json`;
+      console.log(`🔄 Descargando UF (mes completo) ${year}-${monthStr}`);
+    } else {
+      url = `${CMF_BASE_URL}?apikey=${CMF_API_KEY}&formato=json&fecha_inicio=${toISO(start)}&fecha_fin=${toISO(end)}`;
+      console.log(`🔄 Descargando UF (rango) ${toISO(start)} → ${toISO(end)}`);
+    }
 
     try {
       const response = await fetch(url);
@@ -52,6 +65,12 @@ export async function syncUfRates(initial = false) {
 
       const data = await response.json();
       const entries = data.UFs || data.UF || [];
+      if (!Array.isArray(entries)) {
+        console.warn(`⚠️ Formato inesperado, claves: ${Object.keys(data).join(', ')}`);
+        continue;
+      }
+
+      console.log(`   ↪️ Registros recibidos: ${entries.length}`);
 
       if (entries.length === 0) {
         console.warn(`⚠️ Sin datos para ${toISO(start)} a ${toISO(end)}`);
@@ -59,7 +78,16 @@ export async function syncUfRates(initial = false) {
       }
 
       for (const { Fecha, Valor } of entries) {
-        const date = new Date(Fecha);
+        let date: Date;
+        if (/^\d{2}-\d{2}-\d{4}$/.test(Fecha)) {
+          const [dd, mm, yyyy] = Fecha.split('-');
+          date = new Date(`${yyyy}-${mm}-${dd}T00:00:00Z`);
+        } else if (/^\d{4}-\d{2}-\d{2}$/.test(Fecha)) {
+          date = new Date(`${Fecha}T00:00:00Z`);
+        } else {
+          date = new Date(Fecha);
+        }
+        if (isNaN(date.getTime())) continue;
         const ufValue = parseFloat(Valor.replace(/\./g, '').replace(',', '.'));
         if (!ufValue || isNaN(ufValue)) continue;
 

@@ -19,6 +19,8 @@ export interface UnassignedMovement {
   matched: boolean;
   balance: number;
   ufValue?: number | null;
+  debitUf?: number | null;
+  creditUf?: number | null;
 }
 
 interface Props {
@@ -113,13 +115,6 @@ export const UnassignedMovementsTable: React.FC<Props> = ({ data, loading = fals
       ellipsis: true 
     },
     { 
-      title: 'Proyecto', 
-      dataIndex: 'projectName', 
-      key: 'projectName',
-      width: 150,
-      ellipsis: true 
-    },
-    { 
       title: 'Origen', 
       dataIndex: 'source', 
       key: 'source',
@@ -136,8 +131,12 @@ export const UnassignedMovementsTable: React.FC<Props> = ({ data, loading = fals
       title: 'Descripción',
       dataIndex: 'description',
       key: 'description',
-      width: 250,
-      ellipsis: true,
+      onCell: () => ({
+        style: {
+          whiteSpace: 'normal',
+          wordBreak: 'break-word',
+        },
+      }),
       render: text => text || '-',
     },
     {
@@ -162,13 +161,9 @@ export const UnassignedMovementsTable: React.FC<Props> = ({ data, loading = fals
       width: 100,
       align: 'right',
       render: (_text, record) => {
-        const uf = record.ufValue;
-        const amount = record.debit ?? record.credit ?? 0;
-        if (!uf) return '-';
-        const ufAmount = amount / uf;
-        return ufAmount?
-          ufAmount.toLocaleString('es-CL', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
-          : '-';
+        const v = record.debitUf ?? record.creditUf ?? null;
+        if (v == null || isNaN(v)) return '-';
+        return v.toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       },
     },
     {
@@ -213,7 +208,8 @@ export const UnassignedMovementsTable: React.FC<Props> = ({ data, loading = fals
         rowKey="id"
         loading={loading}
         pagination={{ pageSize: 10 }}
-        scroll={{ x: 1530, y: '60vh' }}
+        scroll={{ y: '60vh' }}
+        tableLayout="fixed"
       />
     </Card>
   );

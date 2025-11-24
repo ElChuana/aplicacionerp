@@ -13,8 +13,11 @@ export interface ObligationDetail {
   start_date: string;
   due_date: string | null;
   paid_amount: number;
+  credit_notes_total?: number;
   balance: number;
   status: 'pagada' | 'pendiente' | 'vencida';
+  cost_center_name?: string | null;
+  sub_account_name?: string | null;
   dte?: dte_documents | null;
 }
 
@@ -27,6 +30,8 @@ export const ObligationDetailCard: React.FC<{ obligation: ObligationDetail }> = 
       {obligation.description && (
         <Descriptions.Item label="Descripción" span={2}>{obligation.description}</Descriptions.Item>
       )}
+      <Descriptions.Item label="Centro de Costo" span={1}>{obligation.cost_center_name || '-'}</Descriptions.Item>
+      <Descriptions.Item label="Subcuenta" span={1}>{obligation.sub_account_name || '-'}</Descriptions.Item>
       <Descriptions.Item label="Monto Original">
         ${obligation.amount_original.toLocaleString('es-CL')} {obligation.currency}
       </Descriptions.Item>
@@ -50,6 +55,11 @@ export const ObligationDetailCard: React.FC<{ obligation: ObligationDetail }> = 
       <Descriptions.Item label="Monto Pagado">
         ${obligation.paid_amount.toLocaleString('es-CL')}
       </Descriptions.Item>
+      {obligation.credit_notes_total != null && obligation.credit_notes_total > 0 && (
+        <Descriptions.Item label="Notas Crédito Aplicadas">
+          ${Number(obligation.credit_notes_total).toLocaleString('es-CL')}
+        </Descriptions.Item>
+      )}
       <Descriptions.Item label="Balance Pendiente">
         <strong>${obligation.balance.toLocaleString('es-CL')}</strong>
       </Descriptions.Item>

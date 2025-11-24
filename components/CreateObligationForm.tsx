@@ -6,17 +6,35 @@ import type { dte_documents } from '@prisma/client';
 
 const { Option } = Select;
 
-export const CreateObligationForm = ({ onSubmit, companyId }: any) => {
+interface CreateObligationFormProps {
+  onSubmit: any;
+  companyId: number;
+  initialValues?: {
+    description?: string;
+    amount?: number;
+    currency?: string;
+    startDate?: string;
+  };
+}
+
+export const CreateObligationForm = ({ onSubmit, companyId, initialValues }: CreateObligationFormProps) => {
   const [form] = Form.useForm();
 
   // ---------- ESTADOS ----------
   const [providers, setProviders] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
   const [types, setTypes] = useState<any[]>([]);
+  const [costCenters, setCostCenters] = useState<any[]>([]);
+  const [subAccounts, setSubAccounts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedType, setSelectedType] = useState<any>(null);
   const [selectedProvider, setSelectedProvider] = useState<string>('');
+  const [selectedProviderId, setSelectedProviderId] = useState<number | null>(null);
   const [availableDtes, setAvailableDtes] = useState<dte_documents[]>([]);
+  const [suggestedCostCenterId, setSuggestedCostCenterId] = useState<number | null>(null);
+  const [suggestedSubAccountId, setSuggestedSubAccountId] = useState<number | null>(null);
+  const [userTouchedCostCenter, setUserTouchedCostCenter] = useState(false);
+  const [userTouchedSubAccount, setUserTouchedSubAccount] = useState(false);
 
   // ---------- MODAL NUEVO TIPO ----------
   const [modalVisible, setModalVisible] = useState(false);
@@ -34,21 +52,34 @@ export const CreateObligationForm = ({ onSubmit, companyId }: any) => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [provRes, projRes, typeRes] = await Promise.all([
+        const [provRes, projRes, typeRes, ccRes] = await Promise.all([
           fetch(`/api/erp/providers?company=${companyId}`),
           fetch(`/api/erp/projects?company=${companyId}`),
           fetch(`/api/erp/obligation-types`),
+          fetch(`/api/erp/cost-centers/simple`),
         ]);
 
-        const [provData, projData, typeData] = await Promise.all([
+        const [provData, projData, typeData, ccData] = await Promise.all([
           provRes.json(),
           projRes.json(),
           typeRes.json(),
+          ccRes.json(),
         ]);
 
         setProviders(Array.isArray(provData) ? provData : []);
         setProjects(Array.isArray(projData) ? projData : []);
         setTypes(Array.isArray(typeData) ? typeData : []);
+        setCostCenters(Array.isArray(ccData) ? ccData : []);
+        
+        // Aplicar valores iniciales si existen
+        if (initialValues) {
+          const formValues: any = {};
+          if (initialValues.description) formValues.description = initialValues.description;
+          if (initialValues.amount) formValues.amount = initialValues.amount;
+          if (initialValues.currency) formValues.currency = initialValues.currency;
+          if (initialValues.startDate) formValues.startDate = dayjs(initialValues.startDate);
+          form.setFieldsValue(formValues);
+        }
       } catch {
         message.error('Error al cargar datos iniciales');
       } finally {
@@ -56,7 +87,7 @@ export const CreateObligationForm = ({ onSubmit, companyId }: any) => {
       }
     };
     fetchData();
-  }, [companyId]);
+  }, [companyId, initialValues, form]);
 
   // ---------- CARGAR DTES ----------
   useEffect(() => {
@@ -74,6 +105,41 @@ export const CreateObligationForm = ({ onSubmit, companyId }: any) => {
       fetchDtes();
     }
   }, [selectedProvider]);
+
+  // ---------- CARGAR PREFERENCIAS DE PROVEEDOR ----------
+  useEffect(() => {
+    if (selectedProviderId) {
+      const fetchPreferences = async () => {
+        try {
+          const response = await fetch(`/api/erp/providers/${selectedProviderId}/preference`);
+          if (response.ok) {
+            const prefs = await response.json();
+            if (prefs.cost_center_id) {
+              setSuggestedCostCenterId(prefs.cost_center_id);
+              // Solo autocompletar si el usuario no ha tocado el campo
+              if (!userTouchedCostCenter) {
+                form.setFieldsValue({ costCenterId: prefs.cost_center_id });
+              }
+              // Cargar subcuentas para ese centro de costo
+              const subRes = await fetch(`/api/erp/sub-accounts?cost_center_id=${prefs.cost_center_id}`);
+              const subData = await subRes.json();
+              setSubAccounts(Array.isArray(subData) ? subData : []);
+              
+              if (prefs.sub_account_id) {
+                setSuggestedSubAccountId(prefs.sub_account_id);
+                if (!userTouchedSubAccount) {
+                  form.setFieldsValue({ subAccountId: prefs.sub_account_id });
+                }
+              }
+            }
+          }
+        } catch (error) {
+          console.log('No se encontraron preferencias para este proveedor');
+        }
+      };
+      fetchPreferences();
+    }
+  }, [selectedProviderId, form, userTouchedCostCenter, userTouchedSubAccount]);
 
   // ---------- CREAR NUEVO TIPO ----------
   const handleCreateType = async () => {
@@ -268,6 +334,7 @@ export const CreateObligationForm = ({ onSubmit, companyId }: any) => {
               onChange={(val) => {
                 const provider = providers.find(p => p.id === val);
                 setSelectedProvider(provider?.rut || '');
+                setSelectedProviderId(val);
                 form.setFieldsValue({ providerId: val });
                 if (selectedType?.requires_dte && provider?.rut) {
                   // Cargar DTEs disponibles para el nuevo proveedor
@@ -439,6 +506,72 @@ export const CreateObligationForm = ({ onSubmit, companyId }: any) => {
 
         <Form.Item label="Fecha de Vencimiento" name="dueDate">
           <DatePicker style={{ width: '100%' }} />
+        </Form.Item>
+
+        {/* CENTRO DE COSTO */}
+        <Form.Item
+          label={
+            <span>
+              Centro de Costo {suggestedCostCenterId && form.getFieldValue('costCenterId') === suggestedCostCenterId && (
+                <span style={{ marginLeft: 8 }}><span style={{ background:'#e6f4ff', color:'#0958d9', padding:'2px 6px', borderRadius:4, fontSize:12 }}>Sugerido</span></span>
+              )}
+            </span>
+          }
+          name="costCenterId"
+          rules={[{ required: true, message: 'Seleccione un centro de costo' }]}
+        >
+          <Select
+            placeholder="Seleccionar centro de costo"
+            optionFilterProp="children"
+            showSearch
+            onChange={async (val) => {
+              setUserTouchedCostCenter(true);
+              form.setFieldsValue({ costCenterId: val, subAccountId: undefined });
+              setSubAccounts([]);
+              if (val) {
+                try {
+                  const res = await fetch(`/api/erp/sub-accounts?cost_center_id=${val}`);
+                  const data = await res.json();
+                  setSubAccounts(Array.isArray(data) ? data : []);
+                } catch {
+                  message.error('Error al cargar subcuentas');
+                }
+              }
+            }}
+          >
+            {costCenters.map((cc) => (
+              <Option key={cc.id} value={cc.id}>
+                {cc.name}
+              </Option>
+            ))}
+          </Select>
+        </Form.Item>
+
+        {/* SUBCUENTA */}
+        <Form.Item
+          label={
+            <span>
+              Subcuenta {suggestedSubAccountId && form.getFieldValue('subAccountId') === suggestedSubAccountId && (
+                <span style={{ marginLeft: 8 }}><span style={{ background:'#e6f4ff', color:'#0958d9', padding:'2px 6px', borderRadius:4, fontSize:12 }}>Sugerido</span></span>
+              )}
+            </span>
+          }
+          name="subAccountId"
+          rules={[{ required: true, message: 'Seleccione una subcuenta' }]}
+        >
+          <Select
+            placeholder="Seleccionar subcuenta"
+            optionFilterProp="children"
+            showSearch
+            disabled={subAccounts.length === 0}
+            onChange={() => setUserTouchedSubAccount(true)}
+          >
+            {subAccounts.map((sub) => (
+              <Option key={sub.id} value={sub.id}>
+                {sub.code} - {sub.name}
+              </Option>
+            ))}
+          </Select>
         </Form.Item>
 
         {/* RECURRENCIA */}

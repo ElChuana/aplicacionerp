@@ -4,7 +4,6 @@ import { Spin, Typography, Tabs } from 'antd';
 import useSWR from 'swr';
 import { useRouter } from 'next/router';
 import { CostCentersSummary, CostCenterAgg } from '../../../components/CostCentersSummary';
-import { UnassignedMovementsTable } from '../../../components/UnassignedMovementsTable';
 import {
   ResponsiveContainer,
   BarChart,
@@ -37,25 +36,17 @@ export default function CostCentersPage() {
 
   const summaryKey =
     router.isReady && companyId ? `/api/erp/cost-centers?company=${companyId}` : null;
-  const unassignedKey =
-    router.isReady && companyId
-      ? `/api/bank-movements?company=${companyId}&unassigned=true`
-      : null;
-
   const { data: summary, error: errSum } = useSWR<CostCenterAgg[]>(summaryKey, fetcher);
-  const { data: unassigned, error: errUn } = useSWR<any[]>(unassignedKey, fetcher);
 
-  if (!router.isReady || !summary || !unassigned) {
+  if (!router.isReady || !summary) {
     return (
       <Spin
-        tip="Cargando centros y movimientos..."
+        tip="Cargando centros de costo..."
         style={{ marginTop: 50, textAlign: 'center' }}
       />
     );
   }
-  if (errSum || errUn) {
-    return <Text type="danger">Error cargando datos</Text>;
-  }
+  if (errSum) return <Text type="danger">Error cargando centros</Text>;
 
   // Process summary to ensure values are shown correctly
   const processedSummary = summary.map(cc => ({
@@ -67,6 +58,7 @@ export default function CostCentersPage() {
   // Totales generales
   const totalCLP = processedSummary.reduce((acc, cc) => acc + (cc.totalCLP ?? 0), 0);
   const totalUF = processedSummary.reduce((acc, cc) => acc + (cc.totalUF ?? 0), 0);
+  const totalObligations = processedSummary.reduce((acc, cc) => acc + (cc.obligationsCount ?? 0), 0);
 
   // Filtramos "ingresos" y centros sin movimientos de los gráficos
   const dataForCharts = processedSummary.filter(cc => 
@@ -81,6 +73,7 @@ export default function CostCentersPage() {
     name: cc.name,
     CLP: Math.abs(cc.totalCLP ?? 0),
     UF: Math.abs(cc.totalUF ?? 0),
+    Obligaciones: cc.obligationsCount ?? 0
   }));
 
   console.log('chartData:', chartData);
@@ -102,6 +95,9 @@ export default function CostCentersPage() {
         <span style={{ marginLeft: 24 }} />
         <Text strong>Total UF: </Text>
         <Text>{totalUF.toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+        <span style={{ marginLeft: 24 }} />
+        <Text strong>Obligaciones: </Text>
+        <Text>{totalObligations.toLocaleString('es-CL')}</Text>
       </div>
       {/* Totales resumen */}
       <CostCentersSummary
@@ -136,6 +132,7 @@ export default function CostCentersPage() {
                   <Cell key={`cell-bar-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Bar>
+              <Bar dataKey="Obligaciones" fill="#82ca9d" />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -169,11 +166,7 @@ export default function CostCentersPage() {
         <Text>No hay datos para mostrar</Text>
       )}
 
-      {/* Movimientos sin centro */}
-      <Title level={4} style={{ marginTop: 32 }}>
-        Movimientos sin Centro de Costo
-      </Title>
-      <UnassignedMovementsTable data={unassigned} />
+      {/* Se elimina sección de movimientos sin centro al cambiar el enfoque a obligaciones */}
     </div>
   );
 }

@@ -14,36 +14,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ error: "Cuerpo inválido" });
     }
 
-    // 🔹 Validar subcuentas existentes
-    const subIds = Array.from(
-      new Set(
-        Object.values(assignments)
-          .map((a: any) => a.sub_account_id)
-          .filter((id) => id)
-      )
-    ) as number[];
-
-    const validSubs = await prisma.sub_accounts.findMany({
-      where: { id: { in: subIds } },
-      select: { id: true },
-    });
-    const validSet = new Set(validSubs.map((s) => s.id));
-
+    // Actualizar solo project_id (la clasificación ahora está en obligaciones)
     const updates = Object.entries(assignments)
-      .filter(([_, data]: [string, any]) =>
-        data.sub_account_id ? validSet.has(Number(data.sub_account_id)) : false
-      )
+      .filter(([_, data]: [string, any]) => data.project_id)
       .map(([id, data]: [string, any]) =>
         prisma.bank_movements.update({
           where: { id: BigInt(id) },
           data: {
-            sub_account_id: data.sub_account_id,
+            project_id: data.project_id,
           },
         })
       );
 
     if (updates.length === 0) {
-      return res.status(400).json({ error: "No hay asignaciones válidas" });
+      return res.status(400).json({ error: "No hay asignaciones válidas con proyecto" });
     }
 
     await Promise.all(updates);
@@ -56,8 +40,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (error.code === "P2003") {
       return res.status(400).json({
-        error:
-          "Algunas subcuentas no existen o no están vinculadas correctamente.",
+        error: "Algunos proyectos no existen o no están vinculados correctamente.",
       });
     }
 
