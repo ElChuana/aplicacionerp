@@ -104,8 +104,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const project_id = Number(req.body.project_id ?? req.body.projectId);
       const type_id = Number(req.body.type_id ?? req.body.typeId);
       const provider_id = Number(req.body.provider_id ?? req.body.providerId);
-      const cost_center_id = Number(req.body.cost_center_id ?? req.body.costCenterId);
-      const sub_account_id = Number(req.body.sub_account_id ?? req.body.subAccountId);
+      
+      // Opcionales: cost_center_id y sub_account_id
+      const cost_center_id = req.body.cost_center_id ?? req.body.costCenterId;
+      const sub_account_id = req.body.sub_account_id ?? req.body.subAccountId;
+      
+      const parsedCostCenterId = cost_center_id ? Number(cost_center_id) : null;
+      const parsedSubAccountId = sub_account_id ? Number(sub_account_id) : null;
 
       const rawAmount = req.body.amount_original ?? req.body.amount;
       const amount_original =
@@ -115,12 +120,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         isNaN(project_id) || project_id <= 0 ||
         isNaN(type_id)    || type_id    <= 0 ||
         isNaN(provider_id)|| provider_id<= 0 ||
-        isNaN(cost_center_id) || cost_center_id <= 0 ||
-        isNaN(sub_account_id) || sub_account_id <= 0 ||
         isNaN(amount_original) || amount_original <= 0
       ) {
         return res.status(400).json({
-          message: 'project_id, type_id, provider_id, cost_center_id, sub_account_id y amount_original son obligatorios y numéricos',
+          message: 'project_id, type_id, provider_id y amount_original son obligatorios y numéricos',
+        });
+      }
+      
+      // Validar que si se enviaron, sean numéricos válidos
+      if (parsedCostCenterId !== null && (isNaN(parsedCostCenterId) || parsedCostCenterId <= 0)) {
+        return res.status(400).json({
+          message: 'cost_center_id debe ser un número válido si se proporciona',
+        });
+      }
+      
+      if (parsedSubAccountId !== null && (isNaN(parsedSubAccountId) || parsedSubAccountId <= 0)) {
+        return res.status(400).json({
+          message: 'sub_account_id debe ser un número válido si se proporciona',
         });
       }
 
@@ -162,8 +178,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         project_id: number;
         type_id: number;
         provider_id: number;
-        cost_center_id: number;
-        sub_account_id: number;
+        cost_center_id: number | null;
+        sub_account_id: number | null;
         description: string | null;
         document_number: string | null;
         amount_original: any; // Prisma Decimal compatible
@@ -182,8 +198,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           project_id,
           type_id,
           provider_id,
-          cost_center_id,
-          sub_account_id,
+          cost_center_id: parsedCostCenterId,
+          sub_account_id: parsedSubAccountId,
           description,
           document_number,
           amount_original,
@@ -208,8 +224,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             project_id,
             type_id,
             provider_id,
-            cost_center_id,
-            sub_account_id,
+            cost_center_id: parsedCostCenterId,
+            sub_account_id: parsedSubAccountId,
             description,
             document_number,
             amount_original,
