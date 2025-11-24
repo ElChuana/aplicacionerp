@@ -22,16 +22,18 @@ export async function getCostCentersSummary(params: FunctionParams) {
     }
   });
   
-  // Obtener movimientos que tienen subcuenta asignada
-  const movements = await prisma.bank_movements.findMany({
+  // Obtener obligaciones con clasificación (centro de costo y subcuenta)
+  const obligations = await prisma.obligations.findMany({
     where: {
-      bank_accounts: { company_id },
-      sub_account_id: { not: null }
+      projects: { company_id },
+      cost_center_id: { not: null }
     },
     include: {
-      sub_accounts: {
+      cost_centers: true,
+      sub_accounts: true,
+      movement_matches: {
         include: {
-          cost_centers: true
+          bank_movements: true
         }
       }
     }
@@ -39,11 +41,13 @@ export async function getCostCentersSummary(params: FunctionParams) {
   
   // Agregar por centro de costo
   const summary = costCenters.map(cc => {
-    const ccMovements = movements.filter(m => m.sub_accounts?.cost_center_id === cc.id);
+    const ccObligations = obligations.filter(o => o.cost_center_id === cc.id);
     
-    const totalCLP = ccMovements.reduce((sum, m) => {
-      const amount = m.debit ? -Number(m.debit) : Number(m.credit || 0);
-      return sum + amount;
+    const totalCLP = ccObligations.reduce((sum, obl) => {
+      const oblTotal = obl.movement_matches.reduce((matchSum, match) => {
+        return matchSum + Number(match.matched_amount || 0);
+      }, 0);
+      return sum + oblTotal;
     }, 0);
     
     return {
@@ -75,37 +79,49 @@ export async function getCostCenterDetail(params: FunctionParams) {
     return { error: 'Centro de costo no encontrado' };
   }
   
-  // Obtener IDs de subcuentas
-  const subAccountIds = costCenter.sub_accounts.map(sa => sa.id);
-  
-  // Obtener movimientos de las subcuentas de este centro
-  const movements = await prisma.bank_movements.findMany({
+  // Obtener obligaciones de este centro de costo con sus movimientos asociados
+  const obligations = await prisma.obligations.findMany({
     where: {
-      bank_accounts: { company_id },
-      sub_account_id: { in: subAccountIds }
+      projects: { company_id },
+      cost_center_id: cost_center_id
     },
     include: {
-      sub_accounts: true
-    },
-    orderBy: { bank_date: 'desc' },
-    take: 20
+      sub_accounts: true,
+      movement_matches: {
+        include: {
+          bank_movements: true
+        }
+      }
+    }
   });
   
-  const totalCLP = movements.reduce((sum, m) => {
-    const amount = m.debit ? -Number(m.debit) : Number(m.credit || 0);
-    return sum + amount;
+  // Obtener todos los movimientos de las obligaciones (a través de matches)
+  const allMatches = obligations.flatMap(o => 
+    o.movement_matches.map(match => ({
+      ...match,
+      subcuenta: o.sub_accounts?.name || 'Sin subcuenta'
+    }))
+  );
+  
+  // Ordenar por fecha más reciente
+  allMatches.sort((a, b) => 
+    b.bank_movements.bank_date.getTime() - a.bank_movements.bank_date.getTime()
+  );
+  
+  const totalCLP = allMatches.reduce((sum, match) => {
+    return sum + Number(match.matched_amount || 0);
   }, 0);
   
   return {
     centro: costCenter.name,
     subcuentas: costCenter.sub_accounts.length,
-    movimientos: movements.length,
+    movimientos: allMatches.length,
     totalCLP,
-    ultimosMovimientos: movements.slice(0, 5).map(m => ({
-      fecha: m.bank_date,
-      descripcion: m.description,
-      monto: m.debit ? -Number(m.debit) : Number(m.credit || 0),
-      subcuenta: m.sub_accounts?.name || 'Sin subcuenta'
+    ultimosMovimientos: allMatches.slice(0, 5).map(match => ({
+      fecha: match.bank_movements.bank_date,
+      descripcion: match.bank_movements.description,
+      monto: Number(match.matched_amount || 0),
+      subcuenta: match.subcuenta
     }))
   };
 }
@@ -116,10 +132,6 @@ export async function getBankMovements(params: FunctionParams) {
   const where: any = {
     bank_accounts: { company_id }
   };
-  
-  if (unassigned) {
-    where.sub_account_id = null;
-  }
   
   if (date_from) {
     where.bank_date = { gte: new Date(date_from) };
@@ -132,9 +144,14 @@ export async function getBankMovements(params: FunctionParams) {
   const movements = await prisma.bank_movements.findMany({
     where,
     include: {
-      sub_accounts: {
+      movement_matches: {
         include: {
-          cost_centers: true
+          obligations: {
+            include: {
+              cost_centers: true,
+              sub_accounts: true
+            }
+          }
         }
       }
     },
@@ -147,15 +164,23 @@ export async function getBankMovements(params: FunctionParams) {
     return sum + amount;
   }, 0);
   
+  // Filtrar movimientos sin asignar si se requiere
+  let filteredMovements = movements;
+  if (unassigned) {
+    filteredMovements = movements.filter(m => !m.movement_matches || m.movement_matches.length === 0);
+  }
+  
+  const sinAsignar = movements.filter(m => !m.movement_matches || m.movement_matches.length === 0).length;
+  
   return {
-    cantidad: movements.length,
+    cantidad: filteredMovements.length,
     total,
-    sinAsignar: movements.filter(m => !m.sub_account_id).length,
-    movimientos: movements.slice(0, 10).map(m => ({
+    sinAsignar,
+    movimientos: filteredMovements.slice(0, 10).map(m => ({
       fecha: m.bank_date,
       descripcion: m.description?.substring(0, 50),
       monto: m.debit ? -Number(m.debit) : Number(m.credit || 0),
-      centro: m.sub_accounts?.cost_centers?.name || 'Sin asignar'
+      centro: m.movement_matches?.[0]?.obligations?.cost_centers?.name || 'Sin asignar'
     }))
   };
 }
@@ -223,9 +248,13 @@ export async function getMonthlySummary(params: FunctionParams) {
       }
     },
     include: {
-      sub_accounts: {
+      movement_matches: {
         include: {
-          cost_centers: true
+          obligations: {
+            include: {
+              cost_centers: true
+            }
+          }
         }
       }
     }
@@ -235,7 +264,7 @@ export async function getMonthlySummary(params: FunctionParams) {
   const byCostCenter: any = {};
   
   movements.forEach(m => {
-    const centerName = m.sub_accounts?.cost_centers?.name || 'Sin asignar';
+    const centerName = m.movement_matches?.[0]?.obligations?.cost_centers?.name || 'Sin asignar';
     if (!byCostCenter[centerName]) {
       byCostCenter[centerName] = { ingresos: 0, egresos: 0 };
     }
