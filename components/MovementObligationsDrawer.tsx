@@ -18,6 +18,7 @@ interface ObligationRow {
   projectName: string;
   typeName: string;
   description: string | null;
+  documentNumber?: string | null;
   amount_original: number;
   currency: string;
   balance: number;
@@ -187,6 +188,13 @@ export const MovementObligationsDrawer: React.FC<Props> = ({ movementId, company
       dataIndex: 'typeName', 
       key: 'typeName', 
       width: 140 
+    },
+    { 
+      title: 'N° Doc', 
+      dataIndex: 'documentNumber', 
+      key: 'documentNumber', 
+      width: 100,
+      render: v => v || '-' 
     },
     { 
       title: 'Descripción', 
