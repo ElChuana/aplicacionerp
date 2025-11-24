@@ -167,9 +167,6 @@ export default async function handler(
     workbook.creator = 'ERP Inmobiliaria';
     workbook.created = new Date();
 
-    // Hoja 1: Movimientos con Obligaciones
-    const movementsSheet = workbook.addWorksheet('Movimientos y Obligaciones');
-
     // Estilos
     const headerStyle = {
       font: { bold: true, color: { argb: 'FFFFFFFF' } },
@@ -183,38 +180,80 @@ export default async function handler(
       },
     };
 
-    // Definir columnas
-    movementsSheet.columns = [
-      { header: 'Fecha Movimiento', key: 'mov_date', width: 15 },
-      { header: 'Banco', key: 'bank', width: 20 },
-      { header: 'Cuenta', key: 'account', width: 15 },
-      { header: 'Proyecto', key: 'project', width: 20 },
-      { header: 'Descripción Movimiento', key: 'mov_desc', width: 40 },
-      { header: 'Débito', key: 'debit', width: 15 },
-      { header: 'Crédito', key: 'credit', width: 15 },
-      { header: 'Monto Asignado', key: 'assigned_amount', width: 15 },
-      { header: 'Obligación N°', key: 'obl_number', width: 15 },
-      { header: 'Tipo Obligación', key: 'obl_type', width: 20 },
-      { header: 'Proveedor', key: 'provider', width: 30 },
-      { header: 'RUT Proveedor', key: 'provider_rut', width: 15 },
-      { header: 'Centro de Costo', key: 'cost_center', width: 20 },
-      { header: 'Subcuenta', key: 'sub_account', width: 20 },
-      { header: 'Fecha Obligación', key: 'obl_date', width: 15 },
-      { header: 'Monto Obligación', key: 'obl_amount', width: 15 },
-      { header: 'Estado Obligación', key: 'obl_status', width: 15 },
-    ];
-
-    // Aplicar estilo a encabezados
-    movementsSheet.getRow(1).eachCell((cell) => {
-      cell.style = headerStyle;
+    // Agrupar movimientos por cuenta corriente
+    const movementsByAccount = new Map<string, typeof movements>();
+    
+    movements.forEach((movement) => {
+      const accountKey = movement.bank_accounts 
+        ? `${movement.bank_accounts.bank_name} - ${movement.bank_accounts.account_no}`
+        : 'Sin Cuenta';
+      
+      if (!movementsByAccount.has(accountKey)) {
+        movementsByAccount.set(accountKey, []);
+      }
+      movementsByAccount.get(accountKey)!.push(movement);
     });
 
-    // Llenar datos de movimientos
-    movements.forEach((movement) => {
-      if (movement.movement_matches && movement.movement_matches.length > 0) {
-        // Movimiento con obligaciones asociadas
-        movement.movement_matches.forEach((match) => {
-          const obligation = match.obligations;
+    // Crear una hoja por cada cuenta corriente
+    movementsByAccount.forEach((accountMovements, accountKey) => {
+      // Crear hoja con nombre de la cuenta (limitado a 31 caracteres para Excel)
+      const sheetName = accountKey.substring(0, 31);
+      const movementsSheet = workbook.addWorksheet(sheetName);
+
+      // Definir columnas
+      movementsSheet.columns = [
+        { header: 'Fecha Movimiento', key: 'mov_date', width: 15 },
+        { header: 'Banco', key: 'bank', width: 20 },
+        { header: 'Cuenta', key: 'account', width: 15 },
+        { header: 'Proyecto', key: 'project', width: 20 },
+        { header: 'Descripción Movimiento', key: 'mov_desc', width: 40 },
+        { header: 'Débito', key: 'debit', width: 15 },
+        { header: 'Crédito', key: 'credit', width: 15 },
+        { header: 'Monto Asignado', key: 'assigned_amount', width: 15 },
+        { header: 'Obligación N°', key: 'obl_number', width: 15 },
+        { header: 'Tipo Obligación', key: 'obl_type', width: 20 },
+        { header: 'Proveedor', key: 'provider', width: 30 },
+        { header: 'RUT Proveedor', key: 'provider_rut', width: 15 },
+        { header: 'Centro de Costo', key: 'cost_center', width: 20 },
+        { header: 'Subcuenta', key: 'sub_account', width: 20 },
+        { header: 'Fecha Obligación', key: 'obl_date', width: 15 },
+        { header: 'Monto Obligación', key: 'obl_amount', width: 15 },
+        { header: 'Estado Obligación', key: 'obl_status', width: 15 },
+      ];
+
+      // Aplicar estilo a encabezados
+      movementsSheet.getRow(1).eachCell((cell) => {
+        cell.style = headerStyle;
+      });
+
+      // Llenar datos de movimientos de esta cuenta
+      accountMovements.forEach((movement) => {
+        if (movement.movement_matches && movement.movement_matches.length > 0) {
+          // Movimiento con obligaciones asociadas
+          movement.movement_matches.forEach((match) => {
+            const obligation = match.obligations;
+            movementsSheet.addRow({
+              mov_date: movement.bank_date,
+              bank: movement.bank_accounts?.bank_name || '-',
+              account: movement.bank_accounts?.account_no || '-',
+              project: movement.projects?.name || '-',
+              mov_desc: movement.description || '-',
+              debit: Number(movement.debit) || 0,
+              credit: Number(movement.credit) || 0,
+              assigned_amount: Number(match.matched_amount) || 0,
+              obl_number: obligation.id ? String(obligation.id) : '-',
+              obl_type: obligation.obligation_types?.name || '-',
+              provider: obligation.providers?.name || '-',
+              provider_rut: obligation.providers?.rut || '-',
+              cost_center: obligation.cost_centers?.name || '-',
+              sub_account: obligation.sub_accounts?.name || '-',
+              obl_date: obligation.due_date,
+              obl_amount: Number(obligation.amount_original) || 0,
+              obl_status: obligation.status || '-',
+            });
+          });
+        } else {
+          // Movimiento sin obligación asociada
           movementsSheet.addRow({
             mov_date: movement.bank_date,
             bank: movement.bank_accounts?.bank_name || '-',
@@ -223,51 +262,62 @@ export default async function handler(
             mov_desc: movement.description || '-',
             debit: Number(movement.debit) || 0,
             credit: Number(movement.credit) || 0,
-            assigned_amount: Number(match.matched_amount) || 0,
-            obl_number: obligation.id ? String(obligation.id) : '-',
-            obl_type: obligation.obligation_types?.name || '-',
-            provider: obligation.providers?.name || '-',
-            provider_rut: obligation.providers?.rut || '-',
-            cost_center: obligation.cost_centers?.name || '-',
-            sub_account: obligation.sub_accounts?.name || '-',
-            obl_date: obligation.due_date,
-            obl_amount: Number(obligation.amount_original) || 0,
-            obl_status: obligation.status || '-',
+            assigned_amount: 0,
+            obl_number: '-',
+            obl_type: '-',
+            provider: '-',
+            provider_rut: '-',
+            cost_center: '-',
+            sub_account: '-',
+            obl_date: null,
+            obl_amount: 0,
+            obl_status: '-',
           });
-        });
-      } else {
-        // Movimiento sin obligación asociada
-        movementsSheet.addRow({
-          mov_date: movement.bank_date,
-          bank: movement.bank_accounts?.bank_name || '-',
-          account: movement.bank_accounts?.account_no || '-',
-          project: movement.projects?.name || '-',
-          mov_desc: movement.description || '-',
-          debit: Number(movement.debit) || 0,
-          credit: Number(movement.credit) || 0,
-          assigned_amount: 0,
-          obl_number: '-',
-          obl_type: '-',
-          provider: '-',
-          provider_rut: '-',
-          cost_center: '-',
-          sub_account: '-',
-          obl_date: null,
-          obl_amount: 0,
-          obl_status: '-',
-        });
-      }
+        }
+      });
+
+      // Formatear columnas de números
+      movementsSheet.getColumn('debit').numFmt = '#,##0';
+      movementsSheet.getColumn('credit').numFmt = '#,##0';
+      movementsSheet.getColumn('assigned_amount').numFmt = '#,##0';
+      movementsSheet.getColumn('obl_amount').numFmt = '#,##0';
+
+      // Formatear columnas de fechas
+      movementsSheet.getColumn('mov_date').numFmt = 'dd/mm/yyyy';
+      movementsSheet.getColumn('obl_date').numFmt = 'dd/mm/yyyy';
+
+      // Agregar totales al final de cada hoja
+      const accountDebit = accountMovements.reduce((sum, m) => sum + (Number(m.debit) || 0), 0);
+      const accountCredit = accountMovements.reduce((sum, m) => sum + (Number(m.credit) || 0), 0);
+      
+      movementsSheet.addRow({});
+      const totalRow = movementsSheet.addRow({
+        mov_date: null,
+        bank: null,
+        account: null,
+        project: null,
+        mov_desc: 'TOTALES',
+        debit: accountDebit,
+        credit: accountCredit,
+        assigned_amount: null,
+        obl_number: null,
+        obl_type: null,
+        provider: null,
+        provider_rut: null,
+        cost_center: null,
+        sub_account: null,
+        obl_date: null,
+        obl_amount: null,
+        obl_status: null,
+      });
+      
+      totalRow.font = { bold: true };
+      totalRow.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFE0E0E0' }
+      };
     });
-
-    // Formatear columnas de números
-    movementsSheet.getColumn('debit').numFmt = '#,##0';
-    movementsSheet.getColumn('credit').numFmt = '#,##0';
-    movementsSheet.getColumn('assigned_amount').numFmt = '#,##0';
-    movementsSheet.getColumn('obl_amount').numFmt = '#,##0';
-
-    // Formatear columnas de fechas
-    movementsSheet.getColumn('mov_date').numFmt = 'dd/mm/yyyy';
-    movementsSheet.getColumn('obl_date').numFmt = 'dd/mm/yyyy';
 
     // Hoja 2: Resumen de Obligaciones
     const obligationsSheet = workbook.addWorksheet('Obligaciones Detalladas');
