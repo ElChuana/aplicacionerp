@@ -46,6 +46,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           project_name,
           type_name,
           description,
+          document_number,
           amount_original::float,
           credit_notes_total::float,
           currency,
@@ -71,6 +72,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         projectName: o.project_name,
         typeName: o.type_name,
         description: o.description,
+        documentNumber: o.document_number,
         amount: o.amount_original, // deja número (el front lo formatea)
         creditNotesTotal: o.credit_notes_total || 0,
         currency: o.currency,
@@ -163,6 +165,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         cost_center_id: number;
         sub_account_id: number;
         description: string | null;
+        document_number: string | null;
         amount_original: any; // Prisma Decimal compatible
         currency: string;
         start_date: Date;
@@ -170,6 +173,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       };
 
       const description: string | null = (req.body.description ?? null) || null;
+      const document_number: string | null = (req.body.document_number ?? req.body.documentNumber ?? null) || null;
 
       const batch: Row[] = [];
       if (recurrence === 'ninguna') {
@@ -181,6 +185,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           cost_center_id,
           sub_account_id,
           description,
+          document_number,
           amount_original,
           currency,
           start_date: firstStartDate,
@@ -206,6 +211,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             cost_center_id,
             sub_account_id,
             description,
+            document_number,
             amount_original,
             currency,
             start_date: currentStart,

@@ -466,6 +466,15 @@ export const CreateObligationForm = ({ onSubmit, companyId, initialValues }: Cre
           <Input.TextArea rows={3} />
         </Form.Item>
 
+        {/* NÚMERO DE DOCUMENTO */}
+        <Form.Item 
+          label="N° Factura/Boleta" 
+          name="documentNumber"
+          tooltip="Número de factura, boleta o documento asociado"
+        >
+          <Input placeholder="Ej: 12345" maxLength={100} />
+        </Form.Item>
+
         {/* MONTO */}
         <Form.Item
           label="Monto"

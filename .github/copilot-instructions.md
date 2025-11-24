@@ -358,3 +358,4 @@ Si algo de lo anterior está incompleto o prefieres instrucciones en inglés, di
 - No poner header ni layout en las nuevas páginas que crees
 - Siempre que el rut se escriba con el formato rut con guion y dv, por ejemplo: 12.345.678-9 y se vaya actulizando en tiempo real mientras el usuario escribe
 - Los cambios de bases de datos se hacen en railways
+- Hacer commit de github cuando lo pida explicitamente

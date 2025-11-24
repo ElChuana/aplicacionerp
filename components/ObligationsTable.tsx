@@ -15,6 +15,7 @@ export interface ObligationRow {
   projectName: string;
   typeName: string;
   description?: string | null;
+  documentNumber?: string | null;
   amount: string;
   currency: string;
   startDate: string;
@@ -44,6 +45,14 @@ export const ObligationsTable: React.FC<Props> = ({ data, loading }) => {
       width: 280, // más espacio para nombres largos
       ellipsis: true,
       fixed: 'left'
+    },
+    { 
+      title: 'N° Documento', 
+      dataIndex: 'documentNumber', 
+      key: 'documentNumber',
+      width: 130,
+      ellipsis: true,
+      render: (val: string | null) => val || '-'
     },
     { 
       title: 'Fecha Inicio', 

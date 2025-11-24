@@ -1,9 +1,9 @@
+-- Migración: Actualizar vista obligations_summary para incluir document_number
+-- Fecha: 24 de noviembre de 2025
+-- Descripción: Recrea la vista obligations_summary agregando el campo document_number
 
--- --------------------------------------------------
--- Vista de resumen
--- --------------------------------------------------
--- Esta vista agrupa obligaciones con pagos y estado precomputado.
--- Se puede convertir en MATERIALIZED VIEW si el rendimiento es crítico.
+-- IMPORTANTE: Ejecutar en Railway DESPUÉS de aplicar add_document_number_to_obligations.sql
+
 DROP VIEW IF EXISTS obligations_summary;
 CREATE VIEW obligations_summary AS
 SELECT
@@ -63,8 +63,4 @@ GROUP BY
   o.created_at;
 
 COMMENT ON VIEW obligations_summary IS
-  'Combina obligaciones con sumas de pagos y estado calculado para informes rápidos';
-
--- Opcional: materializar para mejorar rendimiento si los datos cambian poco
--- CREATE MATERIALIZED VIEW obligations_summary_mat AS SELECT * FROM obligations_summary;
--- ANALYZE obligations_summary_mat;
+  'Combina obligaciones con sumas de pagos y estado calculado para informes rápidos. Incluye document_number desde 24-Nov-2025';
