@@ -50,14 +50,32 @@ export const ObligationsTable: React.FC<Props> = ({ data, loading }) => {
       dataIndex: 'startDate', 
       key: 'startDate',
       width: 120,
-      sorter: (a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime() 
+      sorter: (a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime(),
+      render: (date: string) => {
+        if (!date) return '-';
+        const d = new Date(date);
+        return d.toLocaleDateString('es-CL', { 
+          day: '2-digit', 
+          month: '2-digit', 
+          year: 'numeric' 
+        });
+      }
     },
     { 
       title: 'Vencimiento', 
       dataIndex: 'dueDate', 
       key: 'dueDate',
       width: 120,
-      sorter: (a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime() 
+      sorter: (a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime(),
+      render: (date: string) => {
+        if (!date) return '-';
+        const d = new Date(date);
+        return d.toLocaleDateString('es-CL', { 
+          day: '2-digit', 
+          month: '2-digit', 
+          year: 'numeric' 
+        });
+      }
     },
     { 
       title: 'Monto', 

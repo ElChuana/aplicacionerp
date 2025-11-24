@@ -300,9 +300,50 @@ export const MovementObligationsDrawer: React.FC<Props> = ({ movementId, company
 
   const handleCreatedObligation = async (vals: any) => {
     try {
-      const res = await fetch('/api/erp/obligations', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ projectId: vals.projectId, typeId: vals.typeId, providerId: vals.providerId, description: vals.description || movement?.description || 'Obligación desde movimiento', amount: vals.amount || movementAmount, currency: vals.currency || movement?.currency || 'CLP', startDate: vals.startDate?.format('YYYY-MM-DD'), dueDate: vals.dueDate?.format('YYYY-MM-DD') }) });
-      if (!res.ok) throw new Error(await res.text()); const created = await res.json(); const first = Array.isArray(created) ? created[0] : created; message.success('Obligación creada'); setObligations(prev => [{ id: String(first.id), providerName: '', projectName: '', typeName: '', description: first.description, amount_original: first.amount_original, currency: first.currency, balance: first.amount_original, status: 'pendiente' }, ...prev]); setSelected(prev => [...prev, String(first.id)]); setAssignAmounts(prev => ({ ...prev, [String(first.id)]: movementAmount })); setCreateModal(false);
-    } catch (e: any) { message.error(`Error creando obligación: ${e.message}`); }
+      const res = await fetch('/api/erp/obligations', { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify({ 
+          projectId: vals.projectId, 
+          typeId: vals.typeId, 
+          providerId: vals.providerId, 
+          costCenterId: vals.costCenterId,
+          subAccountId: vals.subAccountId,
+          description: vals.description || movement?.description || 'Obligación desde movimiento', 
+          amount: vals.amount || movementAmount, 
+          currency: vals.currency || movement?.currency || 'CLP', 
+          startDate: vals.startDate?.format('YYYY-MM-DD'), 
+          dueDate: vals.dueDate?.format('YYYY-MM-DD'),
+          recurrence: vals.recurrence || 'ninguna',
+          recurrenceEnd: vals.recurrenceEnd?.format('YYYY-MM-DD')
+        }) 
+      });
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error('Error response:', errorText);
+        throw new Error(errorText);
+      }
+      const created = await res.json(); 
+      const first = Array.isArray(created) ? created[0] : created; 
+      message.success('Obligación creada'); 
+      setObligations(prev => [{ 
+        id: String(first.id), 
+        providerName: '', 
+        projectName: '', 
+        typeName: '', 
+        description: first.description, 
+        amount_original: first.amount_original, 
+        currency: first.currency, 
+        balance: first.amount_original, 
+        status: 'pendiente' 
+      }, ...prev]); 
+      setSelected(prev => [...prev, String(first.id)]); 
+      setAssignAmounts(prev => ({ ...prev, [String(first.id)]: movementAmount })); 
+      setCreateModal(false);
+    } catch (e: any) { 
+      message.error(`Error creando obligación: ${e.message}`); 
+      console.error('Error completo:', e);
+    }
   };
 
   return (
