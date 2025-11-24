@@ -28,7 +28,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     let obligations: any[] = [];
     try {
-      obligations = await prisma.$queryRaw`SELECT
+      obligations = await prisma.$queryRaw<any[]>`SELECT
         id,
         provider_name,
         project_name,

@@ -17,7 +17,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     // 1) Detalle de la obligación desde la vista
-    const [obRaw] = await prisma.$queryRaw`
+    const obRawResult = await prisma.$queryRaw<any[]>`
       SELECT
         id,
         provider_name,
@@ -34,17 +34,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       FROM obligations_summary
       WHERE id = ${idNum};
     `;
+    const obRaw = obRawResult[0];
 
     // 2) Información del proveedor
-    const [providerRaw] = await prisma.$queryRaw`
+    const providerRawResult = await prisma.$queryRaw<any[]>`
       SELECT p.id, p.name, p.rut, p.address, p.contact_name, p.contact_email, p.contact_phone
       FROM obligations o
       JOIN providers p ON o.provider_id = p.id
       WHERE o.id = ${idNum};
     `;
+    const providerRaw = providerRawResult[0];
 
     // 3) Movimientos asociados con todos los campos requeridos
-    const movementsRaw = await prisma.$queryRaw`
+    const movementsRaw = await prisma.$queryRaw<any[]>`
       SELECT
         bm.id,
         to_char(bm.bank_date,'YYYY-MM-DD') AS bank_date,
@@ -61,7 +63,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     `;
 
     // 4) Notas de crédito internas asociadas
-    const creditNotesRaw = await prisma.$queryRaw`
+    const creditNotesRaw = await prisma.$queryRaw<any[]>`
       SELECT
         id,
         amount::float AS amount,
@@ -82,7 +84,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       balance:       Number(obRaw.balance),
     };
     const provider = { ...providerRaw, id: Number(providerRaw.id) };
-    const movements = (movementsRaw as any[]).map(m => ({
+    const movements = movementsRaw.map(m => ({
       id:            m.id.toString(),
       bank_date:     m.bank_date,
       accountName:   `${m.bank_name} ${m.account_no}`,
@@ -90,7 +92,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       matched_amount: m.matched_amount,
       currency:      m.currency,
     }));
-    const creditNotes = (creditNotesRaw as any[]).map(cn => ({
+    const creditNotes = creditNotesRaw.map(cn => ({
       id:          Number(cn.id),
       amount:      Number(cn.amount),
       description: cn.description || '',
