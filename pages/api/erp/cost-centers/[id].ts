@@ -41,14 +41,18 @@ export default async function handler(
   }
 
   try {
-    // Agregación de subcuentas basada en obligaciones clasificadas
+    // Último valor UF para convertir montos CLP
+    const uf = await prisma.uf_rates.findFirst({ orderBy: { date: 'desc' } });
+    const ufValue = uf ? parseFloat(uf.uf_value.toString()) : null;
+
+    // Agregación de subcuentas basada en obligaciones clasificadas (separando moneda)
     const subRows = await prisma.$queryRaw<any[]>`
       SELECT
         sa.id,
         sa.code,
         sa.name,
         COALESCE(SUM(CASE WHEN o.currency = 'CLP' THEN o.amount_original ELSE 0 END),0) AS total_clp,
-        COALESCE(SUM(CASE WHEN o.currency = 'UF'  THEN o.amount_original ELSE 0 END),0) AS total_uf,
+        COALESCE(SUM(CASE WHEN o.currency = 'UF'  THEN o.amount_original ELSE 0 END),0) AS total_uf_moneda,
         COUNT(o.id) FILTER (WHERE o.id IS NOT NULL)                                   AS obligations_count
       FROM sub_accounts sa
       LEFT JOIN obligations o ON o.sub_account_id = sa.id
@@ -58,14 +62,19 @@ export default async function handler(
       ORDER BY sa.name ASC;
     `;
 
-    const subAccounts: SubAgg[] = subRows.map(r => ({
-      id: Number(r.id),
-      code: r.code || null,
-      name: r.name,
-      totalCLP: Number(r.total_clp),
-      totalUF: Number(r.total_uf),
-      obligationsCount: Number(r.obligations_count)
-    }));
+    const subAccounts: SubAgg[] = subRows.map(r => {
+      const totalCLP = Number(r.total_clp);
+      const totalUFMoneda = Number(r.total_uf_moneda);
+      const convertedCLPtoUF = ufValue && ufValue > 0 ? totalCLP / ufValue : 0;
+      return {
+        id: Number(r.id),
+        code: r.code || null,
+        name: r.name,
+        totalCLP,
+        totalUF: parseFloat((totalUFMoneda + convertedCLPtoUF).toFixed(4)),
+        obligationsCount: Number(r.obligations_count)
+      };
+    });
 
     // Lista de obligaciones del centro de costo
     const obligationsRows = await prisma.$queryRaw<any[]>`

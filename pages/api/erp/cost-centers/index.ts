@@ -29,15 +29,18 @@ export default async function handler(
       return res.status(400).json({ error: 'Parámetro company inválido' });
     }
 
-    // Consulta agregada basada en obligaciones (modelo moderno)
-    // Asunción: projects.company_id disponible para filtrar por empresa.
+    // Obtener última UF disponible
+    const uf = await prisma.uf_rates.findFirst({ orderBy: { date: 'desc' } });
+    const ufValue = uf ? parseFloat(uf.uf_value.toString()) : null;
+
+    // Consulta base: suma separada por moneda
     const aggRows = await prisma.$queryRaw<any[]>`
       SELECT
         cc.id,
         cc.code,
         cc.name,
         COALESCE(SUM(CASE WHEN o.currency = 'CLP' THEN o.amount_original ELSE 0 END),0)    AS total_clp,
-        COALESCE(SUM(CASE WHEN o.currency = 'UF'  THEN o.amount_original ELSE 0 END),0)    AS total_uf,
+        COALESCE(SUM(CASE WHEN o.currency = 'UF'  THEN o.amount_original ELSE 0 END),0)    AS total_uf_moneda,
         COUNT(o.id) FILTER (WHERE o.id IS NOT NULL)                                         AS obligations_count
       FROM cost_centers cc
       LEFT JOIN obligations o ON o.cost_center_id = cc.id
@@ -47,14 +50,27 @@ export default async function handler(
       ORDER BY cc.name ASC;
     `;
 
-    const result: CostCenterAgg[] = aggRows.map(r => ({
-      id: Number(r.id),
-      code: r.code,
-      name: r.name,
-      totalCLP: Number(r.total_clp),
-      totalUF: Number(r.total_uf),
-      obligationsCount: Number(r.obligations_count)
-    }));
+    const result: CostCenterAgg[] = aggRows.map(r => {
+      const totalCLP = Number(r.total_clp);
+      const totalUFMoneda = Number(r.total_uf_moneda); // obligaciones originalmente en UF
+      // Conversión: CLP → UF usando última UF; si no hay UF usar 0
+      const convertedCLPtoUF = ufValue && ufValue > 0 ? totalCLP / ufValue : 0;
+      return {
+        id: Number(r.id),
+        code: r.code,
+        name: r.name,
+        totalCLP,
+        // totalUF incluye obligaciones en UF + conversión de CLP
+        totalUF: parseFloat((totalUFMoneda + convertedCLPtoUF).toFixed(4)),
+        obligationsCount: Number(r.obligations_count)
+      };
+    });
+
+    // Exponer cabecera para depuración rápida del valor UF usado
+    if (ufValue) {
+      res.setHeader('X-UF-Value', ufValue.toString());
+      res.setHeader('Cache-Control', 'no-store');
+    }
 
     return res.status(200).json(result);
   } catch (error: any) {
