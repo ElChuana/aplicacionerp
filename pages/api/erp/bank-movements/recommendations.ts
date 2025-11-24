@@ -94,10 +94,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       include: {
         bank_accounts: { select: { bank_name: true, account_no: true } },
         projects: { select: { name: true } },
-        sub_accounts: {
-          select: { name: true, cost_centers: { select: { name: true } } },
+        movement_matches: {
+          include: {
+            obligations: {
+              select: { 
+                sub_accounts: { 
+                  select: { name: true, cost_centers: { select: { name: true } } } 
+                } 
+              }
+            }
+          }
         },
-        movement_matches: true,
       },
       orderBy: { bank_date: 'desc' },
     });
@@ -156,6 +163,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         0
       );
 
+      // Obtener clasificación de la primera obligación asociada (si existe)
+      const firstMatch = m.movement_matches?.[0];
+      const subAccount = firstMatch?.obligations?.sub_accounts;
+
       return {
         id: m.id.toString(),
         bank_account_id: m.bank_account_id,
@@ -168,8 +179,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         accountName: `${m.bank_accounts.bank_name} ${m.bank_accounts.account_no}`,
         projectName: m.projects?.name || null,
         description: m.description || null,
-        subAccountName: m.sub_accounts?.name || null,
-        costCenterName: m.sub_accounts?.cost_centers?.name || null,
+        subAccountName: subAccount?.name || null,
+        costCenterName: subAccount?.cost_centers?.name || null,
         matched: m.movement_matches.length > 0,
         matchedAmount,
         suggestionScore,
