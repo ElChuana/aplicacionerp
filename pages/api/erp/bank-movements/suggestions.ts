@@ -14,26 +14,68 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const field = tipo === 'cargo' ? 'debit' : 'credit';
 
-    // ✅ Nueva versión compatible con Prisma 6.x
-    const resultados = await prisma.bank_movements.groupBy({
-      by: ['sub_account_id'],
+    // Buscar movimientos similares con clasificación (a través de obligaciones)
+    const movements = await prisma.bank_movements.findMany({
       where: {
         description: { contains: desc.substring(0, 10), mode: 'insensitive' },
-        sub_account_id: { not: null },
         [field]: { gt: 0 },
+        movement_matches: {
+          some: {
+            obligations: {
+              sub_account_id: { not: null }
+            }
+          }
+        }
       },
-      _count: { sub_account_id: true },
-      orderBy: {
-        _count: { sub_account_id: 'desc' },
+      include: {
+        movement_matches: {
+          include: {
+            obligations: {
+              select: {
+                sub_account_id: true,
+                cost_center_id: true
+              }
+            }
+          }
+        }
       },
+      take: 100
     });
 
-    if (!resultados.length)
+    if (!movements.length)
       return res.status(200).json({ sugerencia: null });
 
-    const top = resultados[0];
+    // Contar frecuencia de cada subcuenta
+    const subAccountCounts = new Map<number, number>();
+    
+    movements.forEach(m => {
+      m.movement_matches.forEach(match => {
+        const subAccountId = match.obligations.sub_account_id;
+        if (subAccountId) {
+          subAccountCounts.set(
+            Number(subAccountId),
+            (subAccountCounts.get(Number(subAccountId)) || 0) + 1
+          );
+        }
+      });
+    });
+
+    if (subAccountCounts.size === 0)
+      return res.status(200).json({ sugerencia: null });
+
+    // Obtener la subcuenta más frecuente
+    let topSubAccountId = 0;
+    let maxCount = 0;
+    
+    subAccountCounts.forEach((count, subAccountId) => {
+      if (count > maxCount) {
+        maxCount = count;
+        topSubAccountId = subAccountId;
+      }
+    });
+
     const sub = await prisma.sub_accounts.findUnique({
-      where: { id: Number(top.sub_account_id) },
+      where: { id: topSubAccountId },
       include: { cost_centers: true },
     });
 
