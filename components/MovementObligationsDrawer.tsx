@@ -19,10 +19,12 @@ interface ObligationRow {
   typeName: string;
   description: string | null;
   documentNumber?: string | null;
+  startDate?: string | null;
+  dueDate?: string | null;
   amount_original: number;
   currency: string;
   balance: number;
-  status: string;
+  status: string; // 'pendiente' | 'vencida' | 'pagada'
   suggestionScore?: number;
 }
 
@@ -168,6 +170,17 @@ export const MovementObligationsDrawer: React.FC<Props> = ({ movementId, company
       key: 'id', 
       width: 100, 
       render: (id) => `#${id}`
+    },
+    {
+      title: 'Fecha Inicio',
+      dataIndex: 'startDate',
+      key: 'startDate',
+      width: 110,
+      render: (date: string | null) => {
+        if (!date) return '-';
+        const d = new Date(date);
+        return d.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      }
     },
     { 
       title: 'Proyecto', 
@@ -495,6 +508,14 @@ export const MovementObligationsDrawer: React.FC<Props> = ({ movementId, company
               pagination={false}
               rowSelection={rowSelection}
               tableLayout="fixed"
+              onRow={record => ({
+                style: {
+                  backgroundColor:
+                    record.status === 'vencida' ? '#fff1f0' :
+                    record.status === 'pagada'  ? '#f6ffed' :
+                                                  '#fffbe6'
+                }
+              })}
             />
           </div>
         )}
@@ -526,6 +547,14 @@ export const MovementObligationsDrawer: React.FC<Props> = ({ movementId, company
               pagination={false}
               rowSelection={rowSelection}
               tableLayout="fixed"
+              onRow={record => ({
+                style: {
+                  backgroundColor:
+                    record.status === 'vencida' ? '#fff1f0' :
+                    record.status === 'pagada'  ? '#f6ffed' :
+                                                  '#fffbe6'
+                }
+              })}
             />
           </div>
         )}
@@ -553,6 +582,14 @@ export const MovementObligationsDrawer: React.FC<Props> = ({ movementId, company
               showTotal: (total) => `Total: ${total} obligaciones`
             }}
             tableLayout="fixed"
+            onRow={record => ({
+              style: {
+                backgroundColor:
+                  record.status === 'vencida' ? '#fff1f0' :
+                  record.status === 'pagada'  ? '#f6ffed' :
+                                                '#fffbe6'
+              }
+            })}
           />
         </div>
       </Drawer>

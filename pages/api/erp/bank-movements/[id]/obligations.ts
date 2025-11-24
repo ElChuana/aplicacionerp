@@ -26,7 +26,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       select: { obligation_id: true, matched_amount: true }
     });
 
-    let obligations: any[] = [];
+  let obligations: any[] = [];
     try {
       obligations = await prisma.$queryRaw<any[]>`SELECT
         id,
@@ -34,8 +34,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         project_name,
         type_name,
         description,
+        document_number,
         amount_original::float AS amount_original,
         currency,
+        to_char(start_date, 'YYYY-MM-DD') AS start_date,
+        to_char(due_date, 'YYYY-MM-DD') AS due_date,
         balance::float AS balance,
         status
       FROM obligations_summary
@@ -49,11 +52,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         select: {
           id: true,
           description: true,
+          document_number: true,
           amount_original: true,
           currency: true,
           provider_id: true,
           project_id: true,
           type_id: true,
+          start_date: true,
+          due_date: true,
           movement_matches: { select: { matched_amount: true } },
         },
         orderBy: { created_at: 'desc' }
@@ -67,10 +73,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           project_name: '',
           type_name: '',
           description: o.description,
+          document_number: o.document_number,
           amount_original: parseFloat(o.amount_original.toString()),
           currency: o.currency,
+          start_date: o.start_date ? o.start_date.toISOString().split('T')[0] : null,
+          due_date: o.due_date ? o.due_date.toISOString().split('T')[0] : null,
           balance,
-          status: balance <= 0 ? 'cobrado' : paid > 0 ? 'parcial' : 'pendiente'
+          // Usar estados alineados a la tabla principal
+          status: balance <= 0 ? 'pagada' : (o.due_date && o.due_date.getTime() < Date.now() ? 'vencida' : 'pendiente')
         };
       });
     }
@@ -93,8 +103,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         projectName: o.project_name,
         typeName: o.type_name,
         description: o.description,
+        documentNumber: o.document_number,
         amount_original: o.amount_original,
         currency: o.currency,
+        startDate: o.start_date,
+        dueDate: o.due_date,
         balance: o.balance,
         status: o.status,
       })),
