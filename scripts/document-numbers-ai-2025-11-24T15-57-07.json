@@ -1,0 +1,218 @@
+[
+  {
+    "obligationId": "97",
+    "description": "Amortización capital 100%",
+    "extractedNumber": null,
+    "confidence": "high"
+  },
+  {
+    "obligationId": "96",
+    "description": "Interés bimestral (2027-01-19 → 2027-03-19)",
+    "extractedNumber": null,
+    "confidence": "high"
+  },
+  {
+    "obligationId": "95",
+    "description": "Interés bimestral (2026-11-19 → 2027-01-19)",
+    "extractedNumber": null,
+    "confidence": "high"
+  },
+  {
+    "obligationId": "94",
+    "description": "Interés bimestral (2026-09-19 → 2026-11-19)",
+    "extractedNumber": null,
+    "confidence": "high"
+  },
+  {
+    "obligationId": "93",
+    "description": "Interés bimestral (2026-07-20 → 2026-09-19)",
+    "extractedNumber": null,
+    "confidence": "high"
+  },
+  {
+    "obligationId": "92",
+    "description": "Interés bimestral (2026-05-20 → 2026-07-20)",
+    "extractedNumber": null,
+    "confidence": "high"
+  },
+  {
+    "obligationId": "91",
+    "description": "Interés bimestral (2026-03-19 → 2026-05-20)",
+    "extractedNumber": null,
+    "confidence": "high"
+  },
+  {
+    "obligationId": "90",
+    "description": "Interés bimestral (2026-01-19 → 2026-03-19)",
+    "extractedNumber": null,
+    "confidence": "high"
+  },
+  {
+    "obligationId": "89",
+    "description": "Interés bimestral (2025-11-19 → 2026-01-19)",
+    "extractedNumber": null,
+    "confidence": "high"
+  },
+  {
+    "obligationId": "88",
+    "description": "Interés bimestral (2025-09-19 → 2025-11-19)",
+    "extractedNumber": null,
+    "confidence": "high"
+  },
+  {
+    "obligationId": "87",
+    "description": "Interés bimestral (2025-07-20 → 2025-09-19)",
+    "extractedNumber": null,
+    "confidence": "high"
+  },
+  {
+    "obligationId": "86",
+    "description": "Interés bimestral (2025-05-20 → 2025-07-20)",
+    "extractedNumber": null,
+    "confidence": "high"
+  },
+  {
+    "obligationId": "85",
+    "description": "Amortización capital 100%",
+    "extractedNumber": null,
+    "confidence": "high"
+  },
+  {
+    "obligationId": "84",
+    "description": "Interés anual (2026-05-20 → 2027-05-20)",
+    "extractedNumber": null,
+    "confidence": "high"
+  },
+  {
+    "obligationId": "83",
+    "description": "Interés anual (2025-05-20 → 2026-05-20)",
+    "extractedNumber": null,
+    "confidence": "high"
+  },
+  {
+    "obligationId": "82",
+    "description": "Amortización capital 100%",
+    "extractedNumber": null,
+    "confidence": "high"
+  },
+  {
+    "obligationId": "81",
+    "description": "Interés anual (2026-05-20 → 2027-05-20)",
+    "extractedNumber": null,
+    "confidence": "high"
+  },
+  {
+    "obligationId": "80",
+    "description": "Interés anual (2025-05-20 → 2026-05-20)",
+    "extractedNumber": null,
+    "confidence": "high"
+  },
+  {
+    "obligationId": "79",
+    "description": "Amortización capital 100%",
+    "extractedNumber": null,
+    "confidence": "high"
+  },
+  {
+    "obligationId": "78",
+    "description": "Interés bimestral (2026-03-19 → 2026-05-20)",
+    "extractedNumber": null,
+    "confidence": "high"
+  },
+  {
+    "obligationId": "77",
+    "description": "Interés bimestral (2026-01-19 → 2026-03-19)",
+    "extractedNumber": null,
+    "confidence": "high"
+  },
+  {
+    "obligationId": "76",
+    "description": "Interés bimestral (2025-11-19 → 2026-01-19)",
+    "extractedNumber": null,
+    "confidence": "high"
+  },
+  {
+    "obligationId": "75",
+    "description": "Interés bimestral (2025-09-19 → 2025-11-19)",
+    "extractedNumber": null,
+    "confidence": "high"
+  },
+  {
+    "obligationId": "74",
+    "description": "Interés bimestral (2025-07-20 → 2025-09-19)",
+    "extractedNumber": null,
+    "confidence": "high"
+  },
+  {
+    "obligationId": "73",
+    "description": "Interés bimestral (2025-05-20 → 2025-07-20)",
+    "extractedNumber": null,
+    "confidence": "high"
+  },
+  {
+    "obligationId": "72",
+    "description": "Amortización capital 100%",
+    "extractedNumber": null,
+    "confidence": "high"
+  },
+  {
+    "obligationId": "71",
+    "description": "Interés bimestral (2026-03-19 → 2026-05-20)",
+    "extractedNumber": null,
+    "confidence": "high"
+  },
+  {
+    "obligationId": "70",
+    "description": "Interés bimestral (2026-01-19 → 2026-03-19)",
+    "extractedNumber": null,
+    "confidence": "high"
+  },
+  {
+    "obligationId": "69",
+    "description": "Interés bimestral (2025-11-19 → 2026-01-19)",
+    "extractedNumber": null,
+    "confidence": "high"
+  },
+  {
+    "obligationId": "68",
+    "description": "Interés bimestral (2025-09-19 → 2025-11-19)",
+    "extractedNumber": null,
+    "confidence": "high"
+  },
+  {
+    "obligationId": "67",
+    "description": "Interés bimestral (2025-07-20 → 2025-09-19)",
+    "extractedNumber": null,
+    "confidence": "high"
+  },
+  {
+    "obligationId": "66",
+    "description": "Interés bimestral (2025-05-20 → 2025-07-20)",
+    "extractedNumber": null,
+    "confidence": "high"
+  },
+  {
+    "obligationId": "4",
+    "description": "assaasda",
+    "extractedNumber": null,
+    "confidence": "high"
+  },
+  {
+    "obligationId": "3",
+    "description": "Cuota crédito hipotecario pago 1",
+    "extractedNumber": null,
+    "confidence": "high"
+  },
+  {
+    "obligationId": "2",
+    "description": "Arriendo oficina",
+    "extractedNumber": null,
+    "confidence": "high"
+  },
+  {
+    "obligationId": "1",
+    "description": "Pago mensual a Proveedor Uno",
+    "extractedNumber": null,
+    "confidence": "high"
+  }
+]
