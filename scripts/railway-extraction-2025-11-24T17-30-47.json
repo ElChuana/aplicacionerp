@@ -1,0 +1,648 @@
+{
+  "results": [
+    {
+      "obligationId": "115",
+      "description": "Boleta 17, pago PVC cartel de venta",
+      "extractedNumber": "17",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "114",
+      "description": "Pago Limpieza casa 12",
+      "extractedNumber": null,
+      "confidence": "high"
+    },
+    {
+      "obligationId": "113",
+      "description": "INTERES POR SOBREGIRO EN CUENTA CORRIENTE",
+      "extractedNumber": null,
+      "confidence": "high"
+    },
+    {
+      "obligationId": "112",
+      "description": "IMPTO CARGO SOBREGIRO EN CUENTA CORRIENTE",
+      "extractedNumber": null,
+      "confidence": "high"
+    },
+    {
+      "obligationId": "111",
+      "description": "Pagado por Alberto Fernandez -> CERTIFICADOS VARIOS ING. TRANSITO y .N.U.P. PAGO DE INGRESO 291-04-09-2025.- SE REALIZARA TRABAJO DE CONEXION EMPALME DIRECCION.,\nPORTALES ORIENTE 2201, DESDE 10-09-2025 AL 10-09-2025.",
+      "extractedNumber": null,
+      "confidence": "high"
+    },
+    {
+      "obligationId": "110",
+      "description": "IVA EN COMISIONES/CUENTAS",
+      "extractedNumber": null,
+      "confidence": "high"
+    },
+    {
+      "obligationId": "109",
+      "description": "MANT. CTA CTE (SALDO PROM UF 20)",
+      "extractedNumber": null,
+      "confidence": "high"
+    },
+    {
+      "obligationId": "108",
+      "description": "Boleta 2423 compra utensilios limpieza",
+      "extractedNumber": "2423",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "107",
+      "description": "IVA EN COMISIONES/CUENTAS",
+      "extractedNumber": null,
+      "confidence": "high"
+    },
+    {
+      "obligationId": "106",
+      "description": "MANT. CTA CTE (SALDO PROM UF 22)",
+      "extractedNumber": null,
+      "confidence": "high"
+    },
+    {
+      "obligationId": "105",
+      "description": "TRC Poliza de Seguro",
+      "extractedNumber": null,
+      "confidence": "high"
+    },
+    {
+      "obligationId": "97",
+      "description": "FAC-EL #15167859",
+      "extractedNumber": "15167859",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "96",
+      "description": "FAC-EL #1325643",
+      "extractedNumber": "1325643",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "95",
+      "description": "FAC-EL #1315881",
+      "extractedNumber": "1315881",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "94",
+      "description": "FAC-EL #1308285",
+      "extractedNumber": "1308285",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "93",
+      "description": "FAC-EL #184691",
+      "extractedNumber": "184691",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "92",
+      "description": "FAC-EL #183015",
+      "extractedNumber": "183015",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "91",
+      "description": "FAC-EL #181353",
+      "extractedNumber": "181353",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "90",
+      "description": "FAC-EL #179680",
+      "extractedNumber": "179680",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "89",
+      "description": "FAC-EL #177994",
+      "extractedNumber": "177994",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "88",
+      "description": "FAC-EL #1666271",
+      "extractedNumber": "1666271",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "87",
+      "description": "FAC-EL #1654027",
+      "extractedNumber": "1654027",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "86",
+      "description": "FAC-EL #1637254",
+      "extractedNumber": "1637254",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "85",
+      "description": "FAC-EL #1623261",
+      "extractedNumber": "1623261",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "84",
+      "description": "FAC-EL #1608061",
+      "extractedNumber": "1608061",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "83",
+      "description": "FAC-EL #1592571",
+      "extractedNumber": "1592571",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "82",
+      "description": "FAC-EL #88189",
+      "extractedNumber": "88189",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "81",
+      "description": "FAC-EL #88188",
+      "extractedNumber": "88188",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "80",
+      "description": "FAC-EL #87296",
+      "extractedNumber": "87296",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "79",
+      "description": "FAC-EL #87295",
+      "extractedNumber": "87295",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "78",
+      "description": "FAC-EL #86396",
+      "extractedNumber": "86396",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "77",
+      "description": "FAC-EL #86395",
+      "extractedNumber": "86395",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "76",
+      "description": "FAC-EL #85452",
+      "extractedNumber": "85452",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "75",
+      "description": "FAC-EL #85451",
+      "extractedNumber": "85451",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "74",
+      "description": "FAC-EL #84849",
+      "extractedNumber": "84849",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "73",
+      "description": "FAC-EL #84848",
+      "extractedNumber": "84848",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "72",
+      "description": "FAC-EL #83104",
+      "extractedNumber": "83104",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "71",
+      "description": "FAC-EL #793989",
+      "extractedNumber": "793989",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "70",
+      "description": "FAC-EL #793550",
+      "extractedNumber": "793550",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "69",
+      "description": "FAC-EL #21762",
+      "extractedNumber": "21762",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "68",
+      "description": "FAC-EL #139187157",
+      "extractedNumber": "139187157",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "67",
+      "description": "FAC-EL #138817139",
+      "extractedNumber": "138817139",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "66",
+      "description": "FAC-EL #23391905",
+      "extractedNumber": "23391905",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "65",
+      "description": "FAC-EL #232",
+      "extractedNumber": "232",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "64",
+      "description": "FAC-EL #99",
+      "extractedNumber": "99",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "63",
+      "description": "FAC-EL #90",
+      "extractedNumber": "90",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "62",
+      "description": "FAC-EL #164",
+      "extractedNumber": "164",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "61",
+      "description": "FAC-EL #163",
+      "extractedNumber": "163",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "60",
+      "description": "FAC-EL #162",
+      "extractedNumber": "162",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "59",
+      "description": "FAC-EL #161",
+      "extractedNumber": "161",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "58",
+      "description": "FAC-EL #160",
+      "extractedNumber": "160",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "57",
+      "description": "FAC-EL #26",
+      "extractedNumber": "26",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "56",
+      "description": "FAC-EL #24",
+      "extractedNumber": "24",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "55",
+      "description": "FAC-EE #5184",
+      "extractedNumber": "5184",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "54",
+      "description": "FAC-EE #5141",
+      "extractedNumber": "5141",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "53",
+      "description": "FAC-EE #5092",
+      "extractedNumber": "5092",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "52",
+      "description": "FAC-EE #5044",
+      "extractedNumber": "5044",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "51",
+      "description": "FAC-EE #4995",
+      "extractedNumber": "4995",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "49",
+      "description": "FAC-EL 141683034 - SODIMAC",
+      "extractedNumber": "141683034",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "48",
+      "description": "FAC-EL 23878367 - CGE",
+      "extractedNumber": "23878367",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "47",
+      "description": "FAC-EL 15369438 - BANCO SECURITY",
+      "extractedNumber": "15369438",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "46",
+      "description": "FAC-EL 15343186 - BANCO SECURITY",
+      "extractedNumber": "15343186",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "45",
+      "description": "FAC-EL 3412126 - BANCO BICE",
+      "extractedNumber": "3412126",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "44",
+      "description": "FAC-EL 1725935 - NUBOX",
+      "extractedNumber": "1725935",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "43",
+      "description": "FAC-EL 1711917 - NUBOX",
+      "extractedNumber": "1711917",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "42",
+      "description": "FAC-EL 1695961 - NUBOX",
+      "extractedNumber": "1695961",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "41",
+      "description": "FAC-EL 1682395 - NUBOX",
+      "extractedNumber": "1682395",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "40",
+      "description": "FAC-EL 1380983 - BANCO INTERNACIONAL",
+      "extractedNumber": "1380983",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "39",
+      "description": "FAC-EL 1363278 - BANCO INTERNACIONAL",
+      "extractedNumber": "1363278",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "38",
+      "description": "FAC-EL 1352238 - BANCO INTERNACIONAL",
+      "extractedNumber": "1352238",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "37",
+      "description": "FAC-EL 816002 - ORION SEGUROS GENERALES",
+      "extractedNumber": "816002",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "36",
+      "description": "FAC-EL 193232 - TEPILLE",
+      "extractedNumber": "193232",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "35",
+      "description": "FAC-EL 192003 - TEPILLE",
+      "extractedNumber": "192003",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "34",
+      "description": "FAC-EL 191505 - TEPILLE",
+      "extractedNumber": "191505",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "33",
+      "description": "FAC-EL 189755 - TEPILLE",
+      "extractedNumber": "189755",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "32",
+      "description": "FAC-EL 188088 - TEPILLE",
+      "extractedNumber": "188088",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "31",
+      "description": "FAC-EL 187012 - TEPILLE",
+      "extractedNumber": "187012",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "30",
+      "description": "FAC-EL 186361 - TEPILLE",
+      "extractedNumber": "186361",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "29",
+      "description": "FAC-EL 109697 - COMERCIAL ABASLOG",
+      "extractedNumber": "109697",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "28",
+      "description": "[CRM] FAC-EL 92528 - PLAN OK",
+      "extractedNumber": "92528",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "27",
+      "description": "[CRM] FAC-EL 91627 - PLAN OK",
+      "extractedNumber": "91627",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "26",
+      "description": "[CRM] FAC-EL 90754 - PLAN OK",
+      "extractedNumber": "90754",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "25",
+      "description": "[CRM] FAC-EL 89901 - PLAN OK",
+      "extractedNumber": "89901",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "24",
+      "description": "[CRM] FAC-EL 89041 - PLAN OK",
+      "extractedNumber": "89041",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "23",
+      "description": "FAC-EL 23839 - ORSAN SEGUROS",
+      "extractedNumber": "23839",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "22",
+      "description": "FAC-EL 23838 - ORSAN SEGUROS",
+      "extractedNumber": "23838",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "21",
+      "description": "FAC-EL 1176 - RENT - INVEST",
+      "extractedNumber": "1176",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "20",
+      "description": "FAC-EL 1172 - RENT - INVEST",
+      "extractedNumber": "1172",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "19",
+      "description": "[ADMINISTRACIÓN] FAC-EL 236 - KLEBER HOME",
+      "extractedNumber": "236",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "18",
+      "description": "[ADMINISTRACIÓN] FAC-EL 234 - KLEBER HOME",
+      "extractedNumber": "234",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "17",
+      "description": "[CONSTRUCCIÓN PROYECTO] FAC-EL 168 - CONSTRUCTORA NUEVA RSA",
+      "extractedNumber": "168",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "16",
+      "description": "[CONSTRUCCIÓN PROYECTO] FAC-EL 167 - CONSTRUCTORA NUEVA RSA",
+      "extractedNumber": "167",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "15",
+      "description": "[CONSTRUCCIÓN PROYECTO] FAC-EL 166 - CONSTRUCTORA NUEVA RSA",
+      "extractedNumber": "166",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "14",
+      "description": "[CONSTRUCCIÓN PROYECTO] FAC-EL 165 - CONSTRUCTORA NUEVA RSA",
+      "extractedNumber": "165",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "13",
+      "description": "FAC-EL 108 - DISENO & ARQUITECTURA",
+      "extractedNumber": "108",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "12",
+      "description": "FAC-EL 106 - DISENO & ARQUITECTURA",
+      "extractedNumber": "106",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "11",
+      "description": "FAC-EL 102 - DISENO & ARQUITECTURA",
+      "extractedNumber": "102",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "10",
+      "description": "FAC-EL 80 - TACTIKA INGENIERÍA Y DESARROLLO",
+      "extractedNumber": "80",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "9",
+      "description": "[POSTVENTA] FAC-EL 29 - S Y C CONSTRUCCIONES Y MAQUINARIAS",
+      "extractedNumber": "29",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "8",
+      "description": "[POSTVENTA] FAC-EL 28 - S Y C CONSTRUCCIONES Y MAQUINARIAS",
+      "extractedNumber": "28",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "7",
+      "description": "[POSTVENTA] FAC-EL 27 - S Y C CONSTRUCCIONES Y MAQUINARIAS",
+      "extractedNumber": "27",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "6",
+      "description": "FAC-EL 104673 - BANCO INTERNACIONAL (Comisiones)",
+      "extractedNumber": "104673",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "5",
+      "description": "FAC-EE 5363 - ESTUDIO TRIBUTARIO",
+      "extractedNumber": "5363",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "4",
+      "description": "FAC-EE 5317 - ESTUDIO TRIBUTARIO",
+      "extractedNumber": "5317",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "3",
+      "description": "FAC-EE 5273 - ESTUDIO TRIBUTARIO",
+      "extractedNumber": "5273",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "2",
+      "description": "FAC-EE 5229 - ESTUDIO TRIBUTARIO",
+      "extractedNumber": "5229",
+      "confidence": "high"
+    },
+    {
+      "obligationId": "1",
+      "description": "FAC-EE 403 - GLOBAL ADVISORS MANAGEMENT",
+      "extractedNumber": "403",
+      "confidence": "high"
+    }
+  ],
+  "updated": 98,
+  "errors": 0
+}
